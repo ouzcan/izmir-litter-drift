@@ -1,6 +1,6 @@
 """Ortak yardımcılar: yollar, config okuma."""
 from __future__ import annotations
-import csv, json
+import csv, json, os
 from pathlib import Path
 import yaml
 
@@ -32,3 +32,15 @@ def point(feature_id: str) -> tuple[float, float]:
 def sources() -> list[dict]:
     with open(CFG / "sources.csv", encoding="utf-8") as fh:
         return [r for r in csv.DictReader(fh) if r["lon"] and r["lat"]]
+
+def load_env() -> None:
+    """Depo kökündeki .env dosyasını os.environ'a yükler (cdsapi ve copernicusmarine env değişkenlerini okur)."""
+    f = ROOT / ".env"
+    if not f.exists():
+        return
+    for line in f.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        os.environ.setdefault(k.strip(), v.strip())

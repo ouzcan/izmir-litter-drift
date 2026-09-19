@@ -12,7 +12,9 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from common import RAW, PROC, bbox, params
+from common import RAW, PROC, bbox, params, load_env
+
+load_env()
 
 START = datetime.fromisoformat(sys.argv[1]) if len(sys.argv) > 1 else datetime(2026, 9, 6)
 DAYS = int(sys.argv[2]) if len(sys.argv) > 2 else 7

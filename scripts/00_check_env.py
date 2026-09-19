@@ -21,9 +21,13 @@ def check_creds():
     home = Path.home()
     cm = home / ".copernicusmarine"
     cds = home / ".cdsapirc"
-    print(f"  [{'ok' if cm.exists() else '--'}] Copernicus Marine girişi ({cm})")
-    print(f"  [{'ok' if cds.exists() else '--'}] CDS anahtarı ({cds})")
-    return cm.exists() and cds.exists()
+    env = ROOT / ".env"
+    envtxt = env.read_text(encoding="utf-8") if env.exists() else ""
+    cds_ok = cds.exists() or "CDSAPI_KEY=" in envtxt and not "CDSAPI_KEY=\n" in envtxt
+    cm_ok = cm.exists() or "COPERNICUSMARINE_SERVICE_USERNAME=" in envtxt.replace("# ", "#")
+    print(f"  [{'ok' if cm_ok else '--'}] Copernicus Marine girişi ({cm} veya .env)")
+    print(f"  [{'ok' if cds_ok else '--'}] CDS anahtarı ({cds} veya .env)")
+    return cm_ok and cds_ok
 
 def check_config():
     ok = True
