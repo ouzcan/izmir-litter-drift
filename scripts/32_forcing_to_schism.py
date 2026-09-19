@@ -151,7 +151,15 @@ def cmd_boundary(a):
     dt_e = 3600.0
     tax = np.arange(t0, t1 + np.timedelta64(1, "h"), np.timedelta64(int(dt_e), "s"))
     z_t = to_regular_time(zos, tax).values  # (time, lat, lon)
-    eta = z_t[:, iy, ix] + float(S.get("zos_offset_m", 0.0))
+    eta = z_t[:, iy, ix]
+    eta = np.where(np.isfinite(eta), eta, np.nan)
+    # CMEMS zos jeoide göredir; MED modelinde ortalama ~-0,3..-0,4 m. Model datumu = başlangıç seviyesi (0) olduğundan
+    # ortalamayı çıkarıp yalnız değişimi (gelgit, fırtına kabarması, sinoptik) zorluyoruz. Kapatmak için zos_demean: false.
+    if S.get("zos_demean", True):
+        off = float(np.nanmean(eta)); eta = eta - off
+        log(f"elev2D: CMEMS zos ortalaması {off:+.3f} m çıkarıldı (zos_demean)")
+        (run / "zos_offset_removed.txt").write_text(f"{off:.4f}\n")
+    eta = eta + float(S.get("zos_offset_m", 0.0))
     eta = np.where(np.isfinite(eta), eta, 0.0)
     log(f"elev2D: ortalama {eta.mean():+.3f} m, aralık {eta.min():+.2f}..{eta.max():+.2f} m, {len(tax)} kayıt @ {dt_e:.0f} s")
     write_th(run / "elev2D.th.nc", eta[:, :, None, None], dt_e)
