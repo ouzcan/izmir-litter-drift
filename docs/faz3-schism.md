@@ -45,3 +45,16 @@ Not: `/mnt/c` üzerinden koşmak biraz yavaştır; uzun koşularda `runs/` klas�
 3. `33_param.py`: `param.nml` (2B barotropik önce, sonra 3B), `vgrid.in`, `bctides.in`.
 4. 1 haftalık 2B koşu → kararlılık; 3B koşu → Sayın & Eronat desenleriyle karşılaştırma.
 5. OpenDrift `reader_schism_native` ile Bostanlı testini yerel akıntıyla tekrar.
+
+## Durum — 19 Eylül 2026, akşam
+
+- `31_mesh_to_schism.py`: gerçek ağ (76.326 düğüm) → `hgrid.gr3`. Kıyıda EMODnet'in NaN bıraktığı 10.529 düğüm en yakın
+  deniz hücresinden dolduruldu (Delft3D adımındaki koyu kare artıkları buradan geliyordu); 301 tuzla/kara artığı yüz,
+  21 "kıstırma" (papyon) yüzü ve kopan parçalar atıldı → 76.087 düğüm, 76.544 eleman, 1 açık sınır (394 düğüm,
+  batı + kuzey kenarı), 52 ada. Derinlik 1–685 m, medyan 7,8 m; kenar 108–488 m.
+- `33_schism_setup.py --mode smoke`: 2B barotropik, sabit su seviyesi, zorlama yok, 6 saat.
+- **Duman testi başarılı** (bulut sanal makinesi, 1 hesap çekirdeği + 2 scribe): 360 adım × 60 s, 2 dk 37 s,
+  "Run completed successfully"; su seviyesi ve hız sıfır kaldı (beklenen), kuru düğüm yok. Ağ ve sınır tanımı geçerli.
+- Hız tahmini: 2B ~0,4 s/adım/çekirdek → 7 gün 2B ≈ 1 saat (1 çekirdek); 4 çekirdekte ~20 dk. 3B 11 katman ~5–8×.
+
+Sonraki: `32_forcing_to_schism.py` (CMEMS → elev2D/uv3D/TEM/SAL .th.nc, ERA5 → sflux) ve 2B rüzgârlı 1 hafta.

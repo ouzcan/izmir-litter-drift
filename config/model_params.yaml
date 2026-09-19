@@ -52,3 +52,12 @@ dflowfm:
     thetao: cmems_mod_med_phy-tem_anfc_4.2km_P1D-m      # sıcaklık 3D, günlük ort.
     uo: cmems_mod_med_phy-cur_anfc_4.2km_P1D-m          # akıntı 3D, günlük ort.
     vo: cmems_mod_med_phy-cur_anfc_4.2km_P1D-m
+
+# Faz 3 — SCHISM (Delft3D FM lisans istediği için çekirdek SCHISM)
+schism:
+  run_name: izmir
+  min_depth_m: 1.0          # kıyı düğümlerinde en az derinlik (LAT altı)
+  max_fill_dist_m: 600      # EMODnet'te NaN kalan düğüm için en yakın deniz hücresi arama yarıçapı; ötesi kara sayılır
+  min_open_nodes: 6         # bundan kısa kutu-kenarı parçaları açık sınır sayılmaz
+  nvrt: 2                   # 2D için 2 (ivcor=2); 3D'de 11 (10 katman)
+  dt_s: 60
