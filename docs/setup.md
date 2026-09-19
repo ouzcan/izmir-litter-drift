@@ -41,12 +41,17 @@ key: <profil sayfandaki anahtar>
 
 ## 4. İlk veri ve ilk koşu
 
+Copernicus, CDS, EMODnet ve OSM sunucularına Claude'un çalışma ortamlarından erişilemiyor;
+veri indiren ve model koşan betikler **senin bilgisayarında** çalışır. Çıktılar depo klasörüne
+yazıldığı için Claude sonuçları oradan okur.
+
 ```powershell
-python scripts/01_download_sample.py     # 1 haftalık MED akıntı + dalga, alan A
-python scripts/02_test_run.py            # Bostanlı'dan 100 parçacık, 3 gün
+cd C:\Users\PC\source\repos\izmir-litter-drift
+python scripts\01_download_sample.py 2026-09-06 7   # 1 hafta MED akıntı + dalga + ERA5 rüzgâr, alan A
+python scripts\02_test_run.py 2026-09-06            # Bostanlı'dan 100 parçacık, 3 gün
 ```
 
-Çıktılar `runs/test_bostanli/` altına; harita `runs/test_bostanli/track.png`.
+Çıktılar `runs/test_bostanli/20260906/` altına: `track.nc`, `track.png`, `track.gif`, `summary.txt`.
 
 ## 5. Kontrol
 

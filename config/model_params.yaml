@@ -24,7 +24,7 @@ release:
     duration_days: 3
 
 forcing:
-  currents: "cmems_mod_med_phy-cur_anfc_4.2km_PT1H-m"     # MED MFC analiz/tahmin, saatlik (Faz 1 test)
+  currents: "cmems_mod_med_cur_anfc_4.2km_PT1H-m"     # MED MFC analiz/tahmin, saatlik ortalama (uo, vo)
   currents_reanalysis: "med-cmcc-cur-rean-h"              # 1 yıllık koşu için reanaliz (ürün adı doğrulanacak)
   waves: "cmems_mod_med_wav_anfc_4.2km_PT1H-i"            # Stokes drift (VSDX, VSDY)
   wind: "ERA5 reanalysis-era5-single-levels (u10, v10)"
