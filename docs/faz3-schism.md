@@ -71,3 +71,20 @@ Sonraki: `32_forcing_to_schism.py` (CMEMS → elev2D/uv3D/TEM/SAL .th.nc, ERA5 �
 - `.th.nc` kuralı: kayıt k → t = k·time_step, t=0 koşu başlangıcı (`--start` 00:00 UTC); SCHISM ilk iki kaydı okur,
   time_step < dt ise durur.
 - Test (bulut, sentetik CMEMS + gerçek ERA5 rüzgârı, 1 gün 2B): dosyalar okundu, koşu ilerledi (0,65 s/adım, 1 çekirdek).
+
+## İlk rüzgârlı 2B koşu — 19 Eylül 2026, gece
+
+- Girdi: gerçek ERA5 rüzgârı (6 Eylül 2026, KKD 4–5 m/s), sentetik CMEMS su seviyesi (gerçek CMEMS indirmesi kullanıcının
+  makinesinde yapılacak), 1 gün, dt=60 s, çıktı 30 dk.
+- İlk deneme **kararsızdı**: açık sınırın kıyıya girdiği sığ uçlarda (Aliağa önü 26.82–26.85°D ve batı kenarın
+  Çeşme ucu) 9. saatten sonra 5 m/s'lik sınır jetleri, ±0,9 m su seviyesi. Neden: yalnız-su-seviyesi sınırı (iettype=4)
+  sığ suda kıyıya dayanınca serbest akış jeti üretiyor.
+- Düzeltme: `min_open_depth_m: 30` — 30 m'den sığ kutu-kenarı düğümleri kara duvarı oldu; açık sınır 394 → 274 düğüm,
+  4 parça (kuzey kenarında 2 kısa, ana batı+kuzey yay, batıda kısa). Ayrıca sflux dosyaları gün sonunun 2 saat ötesine
+  uzatıldı (SCHISM son adımda bir sonraki kaydı istiyor) ve çıktı yığını 12 saate indirildi.
+- Sonuç: **kararlı** — hız maks 0,24 m/s (sığ kıyı düğümleri), medyan iç körfez ~2 cm/s, orta ~4, dış ~4 cm/s;
+  su seviyesi ±0,2 m (sınır sinyali + rüzgâr yığılması), kuru düğüm yok. t=24 h'te Yenikale'den iç körfeze ~5 cm/s giriş,
+  iç körfez batı yarısında saat yönünde dönüş eğilimi (`plots/ic_korfez_t047.png`). Süre: 1 gün 2B = 13 dk (1 çekirdek).
+- Betikler: `34_plot_schism.py` özet + görsel üretir.
+
+Sonraki: kullanıcı makinesinde gerçek CMEMS ile 7 gün 2B; ardından 3B (11 katman) aynı hafta ve OpenDrift bağlantısı.

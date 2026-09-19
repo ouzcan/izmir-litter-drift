@@ -93,7 +93,7 @@ def main():
     if not tpl.exists(): raise SystemExit(f"param şablonu yok: {tpl} (SCHISM kaynak: sample_inputs/param.nml)")
     t = tpl.read_text()
 
-    spool_s = 1800; nspool = int(round(spool_s / a.dt)); ihfskip = nspool * 48   # 30 dk çıktı, 1 günlük yığın
+    spool_s = 1800; nspool = int(round(spool_s / a.dt)); ihfskip = nspool * 24   # 30 dk çıktı, 12 saatlik yığın (out2d_N.nc)
     kv = dict(ipre=0, ibc=1 if a.mode != "3d" else 0, ibtp=0 if a.mode != "3d" else 1,
               rnday=days, dt=a.dt, nspool=nspool, ihfskip=ihfskip,
               start_year=start.year, start_month=start.month, start_day=start.day, start_hour=start.hour, utc_start=0,

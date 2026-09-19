@@ -229,7 +229,8 @@ def cmd_sflux(a):
     ndays = int(np.ceil((t1 - t0) / np.timedelta64(1, "D")))
     for d in range(ndays):
         day0 = t0 + np.timedelta64(d, "D"); day1 = day0 + np.timedelta64(1, "D")
-        sel = (times >= day0) & (times <= day1)
+        # gün sonunun 2 saat ötesine kadar kayıt koy: SCHISM son adımda bir sonraki kaydı da ister
+        sel = (times >= day0) & (times <= day1 + np.timedelta64(2, "h"))
         if sel.sum() < 2: log(f"uyarı: gün {d+1} için ERA5 kaydı yetersiz"); continue
         tt = (times[sel] - t0) / np.timedelta64(1, "D")
         out = xr.Dataset(

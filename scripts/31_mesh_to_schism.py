@@ -175,6 +175,9 @@ def main():
     if "north" in allowed: on_edge |= np.abs(y - y.max()) < tol
     if "east" in allowed:  on_edge |= np.abs(x - x.max()) < tol
     if "south" in allowed: on_edge |= np.abs(y - y.min()) < tol
+    # sığ kıyı kesimleri açık sınır olmasın (sınır jetleri): derinlik < min_open_depth_m → kara
+    min_od = float(S.get("min_open_depth_m", 30.0))
+    on_edge &= dep >= min_od
     is_open = on_edge[np.array(outer)].copy()
     N = len(outer)
     # döngüyü bir kara düğümünden başlat

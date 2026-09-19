@@ -59,5 +59,6 @@ schism:
   min_depth_m: 1.0          # kıyı düğümlerinde en az derinlik (LAT altı)
   max_fill_dist_m: 600      # EMODnet'te NaN kalan düğüm için en yakın deniz hücresi arama yarıçapı; ötesi kara sayılır
   min_open_nodes: 6         # bundan kısa kutu-kenarı parçaları açık sınır sayılmaz
+  min_open_depth_m: 30      # sığ (<30 m) kutu-kenarı düğümleri kara duvarı olur; ilk koşuda Aliağa/Çeşme uçlarında 5 m/s jet çıktı
   nvrt: 2                   # 2D için 2 (ivcor=2); 3D'de 11 (10 katman)
   dt_s: 60
