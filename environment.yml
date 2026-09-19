@@ -1,0 +1,19 @@
+name: litter
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - opendrift>=1.13
+  - copernicusmarine>=2.0
+  - cdsapi
+  - xarray
+  - netcdf4
+  - geopandas
+  - shapely
+  - pyproj
+  - cartopy
+  - matplotlib
+  - folium
+  - jupyterlab
+  - tqdm
+  - pyyaml

@@ -1,0 +1,13 @@
+zone_id,name,lon_min,lon_max,lat_min,lat_max,note
+Z01,Bostanlı–Mavişehir,27.05,27.11,38.44,38.48,"Pilot; iç körfez kuzey kıyısı"
+Z02,Karşıyaka–Bayraklı,27.11,27.20,38.44,38.48,"İç körfez kuzeydoğu"
+Z03,Kordon–Konak,27.12,27.16,38.40,38.44,"İç körfez doğu/güneydoğu; Alsancak dahil"
+Z04,İnciraltı–Balçova,27.02,27.12,38.38,38.42,"Çakalburnu lagünü dahil"
+Z05,Güzelbahçe–Urla,26.75,27.02,38.33,38.42,"Orta körfez güney kıyısı"
+Z06,Karaburun–Mordoğan,26.40,26.75,38.45,38.70,"Orta/dış körfez batı kıyısı"
+Z07,Foça–Gediz deltası,26.70,27.00,38.50,38.75,"Dış körfez kuzey; Gediz ağzı, Homa"
+Z08,Çeşme–Alaçatı,26.25,26.50,38.20,38.45,"Yarımada batı ucu"
+Z09,Seferihisar–Sığacık,26.60,26.90,38.05,38.33,"Yarımada güney kıyısı"
+Z10,Aliağa–Dikili,26.75,27.05,38.75,39.15,"Kuzey il kıyısı"
+Z11,Selçuk–Pamucak,27.20,27.40,37.90,38.05,"Güney il kıyısı (Küçük Menderes)"
+Z12,Körfez dışı / açık Ege,,,,"Alan sınırından çıkan parçacıklar (Yunan adaları dahil)"

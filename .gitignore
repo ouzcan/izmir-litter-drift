@@ -1,0 +1,31 @@
+# veri ve koşu çıktıları
+data/raw/*
+data/processed/*
+runs/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!runs/.gitkeep
+*.nc
+*.zarr/
+*.grib
+*.tif
+*.tiff
+
+# python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*.egg-info/
+
+# kimlik bilgileri
+.env
+.copernicusmarine/
+.cdsapirc
+
+# os / editör
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

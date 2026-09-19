@@ -1,0 +1,16 @@
+# OpenDrift ve bağımlılıkları conda-forge'dan kurulur (docs/setup.md); bu liste pip tarafı içindir.
+copernicusmarine>=2.0
+cdsapi>=0.7
+xarray>=2024.1
+netCDF4
+scipy
+numpy
+pandas
+geopandas
+shapely
+pyproj
+matplotlib
+cartopy
+folium
+tqdm
+pyyaml
