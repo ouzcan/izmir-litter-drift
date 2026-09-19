@@ -35,7 +35,8 @@ def main():
     o.add_reader([cur, wav, wnd])
     o.set_config("general:coastline_action", P["beaching"]["coastline_action"])
     o.set_config("drift:stokes_drift", bool(P["stokes_drift"]))
-    o.set_config("drift:horizontal_diffusivity", float(P["horizontal_diffusivity_m2s"]["base"]))
+    # OpenDrift 1.14: yatay difüzyon "environment:fallback:horizontal_diffusivity" ile verilir (m2/s)
+    o.set_config("environment:fallback:horizontal_diffusivity", float(P["horizontal_diffusivity_m2s"]["base"]))
     o.set_config("drift:vertical_mixing", False)
     o.set_config("seed:wind_drift_factor", float(P["windage"]["base"]))
 
@@ -51,16 +52,22 @@ def main():
     except Exception as e:  # noqa: BLE001
         print("animasyon atlandı:", e)
 
-    status = o.elements.status if hasattr(o, "elements") else None
     lines = [str(o), ""]
     try:
         import numpy as np
-        final = o.get_property("status")[0][-1]
-        names = o.status_categories
-        counts = {names[i]: int((final == i).sum()) for i in range(len(names))}
+        ds = o.result                      # xarray Dataset (OpenDrift >= 1.12)
+        st = ds["status"].isel(time=-1).values
+        names = list(getattr(o, "status_categories", [])) or \
+                ds["status"].attrs.get("flag_meanings", "").split()
+        counts = {}
+        for i in np.unique(st[~np.isnan(st.astype(float))]).astype(int):
+            counts[names[i] if i < len(names) else str(i)] = int((st == i).sum())
         lines.append("Son durum: " + ", ".join(f"{k}={v}" for k, v in counts.items()))
-        lon = o.get_property("lon")[0][-1]; lat = o.get_property("lat")[0][-1]
-        lines.append(f"Son konum ort: lon {np.nanmean(lon):.4f}, lat {np.nanmean(lat):.4f}")
+        # son geçerli konum (kıyıya vuranlar dahil): zaman ekseninde son NaN olmayan değer
+        lon = ds["lon"].ffill("time").isel(time=-1).values
+        lat = ds["lat"].ffill("time").isel(time=-1).values
+        lines.append(f"Son konum ort: lon {np.nanmean(lon):.4f}, lat {np.nanmean(lat):.4f}; "
+                     f"lon aralığı {np.nanmin(lon):.3f}-{np.nanmax(lon):.3f}, lat aralığı {np.nanmin(lat):.3f}-{np.nanmax(lat):.3f}")
     except Exception as e:  # noqa: BLE001
         lines.append(f"özet çıkarılamadı: {e}")
     (OUT / "summary.txt").write_text("\n".join(lines), encoding="utf-8")
