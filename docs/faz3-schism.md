@@ -58,3 +58,16 @@ Not: `/mnt/c` üzerinden koşmak biraz yavaştır; uzun koşularda `runs/` klas�
 - Hız tahmini: 2B ~0,4 s/adım/çekirdek → 7 gün 2B ≈ 1 saat (1 çekirdek); 4 çekirdekte ~20 dk. 3B 11 katman ~5–8×.
 
 Sonraki: `32_forcing_to_schism.py` (CMEMS → elev2D/uv3D/TEM/SAL .th.nc, ERA5 → sflux) ve 2B rüzgârlı 1 hafta.
+
+## Zorlama dosyaları — `32_forcing_to_schism.py`
+
+- `download`: Copernicus MED (zos saatlik 2B; so/thetao/uo/vo günlük 3B, `model_params.yaml` → `cmems_datasets`) + ERA5
+  (u10, v10, msl, t2m, d2m) → `data/raw/forcing/`. Kullanıcının bilgisayarında çalışır.
+- `boundary`: açık sınır düğümlerine en yakın geçerli CMEMS hücresi (KD-ağacı), zamanda doğrusal interpolasyon →
+  `elev2D.th.nc` (saatlik); `--mode 3d` ile ayrıca `uv3D/TEM_3D/SAL_3D.th.nc` (6 saatlik, sigma seviyelerine dikey
+  interpolasyon) ve `temp.ic/salt.ic` (CMEMS yüzey alanı).
+- `sflux`: ERA5 → `sflux/sflux_air_1.N.nc` (günlük; **dosya numarası sıfır dolgusuz**: `.1.nc`, `.2.nc` …),
+  `uwind vwind prmsl stmp spfh`, `time` günler, `base_date` koşu başlangıcı; `sflux_inputs.txt` boş namelist.
+- `.th.nc` kuralı: kayıt k → t = k·time_step, t=0 koşu başlangıcı (`--start` 00:00 UTC); SCHISM ilk iki kaydı okur,
+  time_step < dt ise durur.
+- Test (bulut, sentetik CMEMS + gerçek ERA5 rüzgârı, 1 gün 2B): dosyalar okundu, koşu ilerledi (0,65 s/adım, 1 çekirdek).
