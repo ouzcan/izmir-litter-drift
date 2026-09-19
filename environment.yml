@@ -17,3 +17,6 @@ dependencies:
   - jupyterlab
   - tqdm
   - pyyaml
+  - pip
+  - pip:
+      - dfm_tools        # Faz 3: Delft3D FM model kurucu (meshkernel, xugrid, hydrolib-core ile gelir)

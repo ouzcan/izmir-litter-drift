@@ -28,3 +28,27 @@ forcing:
   currents_reanalysis: "cmems_mod_med_phy-cur_my_4.2km_PT1H-m"   # MEDSEA_MULTIYEAR_PHY_006_004, saatlik (3D; yüzey katmanı seçilir) — doğrulandı
   waves: "cmems_mod_med_wav_anfc_4.2km_PT1H-i"            # Stokes drift (VSDX, VSDY), VHM0 — doğrulandı
   wind: "ERA5 reanalysis-era5-single-levels (u10, v10)"
+
+# Faz 3 — Delft3D FM (D-Flow FM) körfez modeli
+dflowfm:
+  model_name: izmir
+  domain_id: B_model
+  base_dxy_deg: 0.005          # taban ağ ~450 m (D-B) × 550 m (K-G)
+  min_edge_m: 100              # en ince kenar (iç körfez, ~110 m çıkar)
+  max_courant_time_s: 20       # dalga-Courant inceltme: sığ yer = küçük hücre (10 m derinlikte ~200 m, 5 m'de ~140 m)
+  bnd_land_buffer_deg: 0.01    # açık sınırı karadan uzak tut (~1 km)
+  bnd_point_spacing_deg: 0.02  # sınır noktaları ~2 km
+  open_edges: [north, west]    # açık sınır yalnız bu kutu kenarlarında; doğu ve güney kara
+  bedlevel_clip_max_m: 5
+  ref_date: "2025-01-01"
+  dtmax_s: 30
+  map_interval_s: 3600
+  kmx: 10                      # 3D sigma katman sayısı
+  nproc: 4
+  # Copernicus MED analiz/tahmin kimlikleri (katalogdan doğrulandı 2026-09-19). Yıllık koşu için 'my'/'myint' sürümleri kullanılacak.
+  cmems_datasets:
+    zos: cmems_mod_med_phy-ssh_anfc_4.2km-2D_PT1H-m     # su seviyesi, saatlik
+    so: cmems_mod_med_phy-sal_anfc_4.2km_P1D-m          # tuzluluk 3D, günlük ort.
+    thetao: cmems_mod_med_phy-tem_anfc_4.2km_P1D-m      # sıcaklık 3D, günlük ort.
+    uo: cmems_mod_med_phy-cur_anfc_4.2km_P1D-m          # akıntı 3D, günlük ort.
+    vo: cmems_mod_med_phy-cur_anfc_4.2km_P1D-m
