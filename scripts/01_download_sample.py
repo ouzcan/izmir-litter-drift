@@ -72,7 +72,7 @@ def era5(out_raw: Path, out_proc: Path):
 
 if __name__ == "__main__":
     print(f"Alan A: lon {LON0}-{LON1}, lat {LAT0}-{LAT1}; {START:%Y-%m-%d} -> {END:%Y-%m-%d}")
-    cmems(P["currents"], ["uo", "vo"], RAW / f"med_cur_{TAG}.nc", surface_only=True)
+    cmems(P["currents"], ["uo", "vo"], RAW / f"med_cur_{TAG}.nc", surface_only=("2D" not in P["currents"]))
     cmems(P["waves"], ["VSDX", "VSDY", "VHM0"], RAW / f"med_wav_{TAG}.nc", surface_only=False)
     era5(RAW / f"era5_wind_{TAG}.nc", PROC / f"era5_wind_{TAG}.nc")
     print("bitti")
