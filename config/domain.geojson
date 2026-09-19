@@ -1,7 +1,12 @@
 {
   "type": "FeatureCollection",
   "name": "izmir_litter_drift_domains",
-  "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
   "features": [
     {
       "type": "Feature",
@@ -9,10 +14,39 @@
         "id": "A_il_kiyisi",
         "name": "Kademe A — İzmir il kıyısı",
         "purpose": "Copernicus MED (1/24°) doğrudan; web sitesi kaynak gridi",
-        "lon_min": 26.0, "lon_max": 27.5, "lat_min": 37.9, "lat_max": 39.2,
+        "lon_min": 26.0,
+        "lon_max": 27.5,
+        "lat_min": 37.9,
+        "lat_max": 39.2,
         "target_resolution_m": 4000
       },
-      "geometry": {"type": "Polygon", "coordinates": [[[26.0,37.9],[27.5,37.9],[27.5,39.2],[26.0,39.2],[26.0,37.9]]]}
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              26.0,
+              37.9
+            ],
+            [
+              27.5,
+              37.9
+            ],
+            [
+              27.5,
+              39.2
+            ],
+            [
+              26.0,
+              39.2
+            ],
+            [
+              26.0,
+              37.9
+            ]
+          ]
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -20,10 +54,39 @@
         "id": "B_korfez",
         "name": "Kademe B — İzmir Körfezi",
         "purpose": "Faz 3 yerel model (100–300 m); makale odağı",
-        "lon_min": 26.55, "lon_max": 27.20, "lat_min": 38.30, "lat_max": 38.75,
+        "lon_min": 26.55,
+        "lon_max": 27.2,
+        "lat_min": 38.3,
+        "lat_max": 38.75,
         "target_resolution_m": 200
       },
-      "geometry": {"type": "Polygon", "coordinates": [[[26.55,38.30],[27.20,38.30],[27.20,38.75],[26.55,38.75],[26.55,38.30]]]}
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              26.55,
+              38.3
+            ],
+            [
+              27.2,
+              38.3
+            ],
+            [
+              27.2,
+              38.75
+            ],
+            [
+              26.55,
+              38.75
+            ],
+            [
+              26.55,
+              38.3
+            ]
+          ]
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -31,10 +94,39 @@
         "id": "C_ic_korfez",
         "name": "İç Körfez (Yenikale geçidinin doğusu)",
         "purpose": "Tuzak analizi; kalış süresi bölgesi",
-        "lon_min": 27.00, "lon_max": 27.20, "lat_min": 38.38, "lat_max": 38.50,
+        "lon_min": 27.0,
+        "lon_max": 27.2,
+        "lat_min": 38.38,
+        "lat_max": 38.5,
         "note": "Yaklaşık kutu; kesin sınır Yenikale geçidi (~27.00°D) üzerinden kıyı çizgisiyle kesilecek"
       },
-      "geometry": {"type": "Polygon", "coordinates": [[[27.00,38.38],[27.20,38.38],[27.20,38.50],[27.00,38.50],[27.00,38.38]]]}
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              27.0,
+              38.38
+            ],
+            [
+              27.2,
+              38.38
+            ],
+            [
+              27.2,
+              38.5
+            ],
+            [
+              27.0,
+              38.5
+            ],
+            [
+              27.0,
+              38.38
+            ]
+          ]
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -42,9 +134,16 @@
         "id": "P_bostanli",
         "name": "Pilot — Bostanlı drifter salım noktası",
         "purpose": "Faz 2 saha; ilk test koşusu salım noktası",
-        "verified": false
+        "verified": false,
+        "note": "GSHHG kara maskesine göre kıyıdan ~400 m açık; ilk denemede 27.095,38.456 kıyıya fazla yakındı"
       },
-      "geometry": {"type": "Point", "coordinates": [27.0950, 38.4560]}
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          27.094,
+          38.4515
+        ]
+      }
     }
   ]
 }

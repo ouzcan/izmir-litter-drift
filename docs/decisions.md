@@ -8,3 +8,4 @@ Tarih · karar · gerekçe. Yeni kararlar en üste.
 - 2026-09-19 · TÜBİTAK başvurusu yok; bağımsız akademik çalışma + web sitesi. · Kullanıcı kararı.
 - 2026-09-19 · Kaynak koordinatları ilk sürümde yaklaşık (`verified=no`); OSM/Overpass bu ortamdan erişilemedi. · Sonraki adımda haritadan doğrulanacak.
 - 2026-09-19 · Veri indirme ve model koşuları kullanıcının Windows makinesinde (conda `litter` ortamı); Claude betikleri yazar, çıktıları depo klasöründen okur. · Copernicus/CDS/EMODnet/OSM sunucuları Claude'un iki ortamından da erişilemiyor (yalnız GitHub ve PyPI açık).
+- 2026-09-19 · İlk test koşusu: Copernicus MED iç körfezde 0 geçerli hücre (akıntı ve dalga). Faz 1 orta/dış körfez + il kıyısıyla sınırlı; iç körfez yerel model (Faz 3) ister. · `docs/notes/2026-09-19-ilk-test-kosusu.md`
