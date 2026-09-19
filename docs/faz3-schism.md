@@ -88,3 +88,29 @@ Sonraki: `32_forcing_to_schism.py` (CMEMS → elev2D/uv3D/TEM/SAL .th.nc, ERA5 �
 - Betikler: `34_plot_schism.py` özet + görsel üretir.
 
 Sonraki: kullanıcı makinesinde gerçek CMEMS ile 7 gün 2B; ardından 3B (11 katman) aynı hafta ve OpenDrift bağlantısı.
+
+## 7 günlük 2B koşu (gerçek CMEMS + ERA5, 6–13 Eylül 2026) — kararsızlık ve düzeltme
+
+- Kullanıcı makinesi, WSL2, 4 çekirdek: 7 gün 2B ≈ 22 dk. Koşu bitti ama **36. saatten sonra kararsız**: hız maks 7,1 m/s
+  (63,5 h), su seviyesi −0,86..+0,56 m, son adımda 7.385 düğümde hız > 0,5 m/s.
+- Tanı (`out2d_4/5/6/14.nc`): bozulma iki yerde başlıyor — (a) açık sınırın KB köşesi (26,34°D 38,90°K, ~350 m derin) ve
+  (b) `min_open_depth_m: 30` filtresinin kuzey kenarın *ortasında* bıraktığı yapay kara duvarları (26,825–26,848°D,
+  derinlik 1–43 m). Duvarların iki yanında su seviyesi yığılıp (+0,49) boşalıyor (−0,86) ve 6–7 m/s'lik jetler çıkıyor;
+  1 günlük testte görünmemesinin nedeni bozulmanın 36 h sonra büyümesi.
+- Kök neden: yalnız-su-seviyesi açık sınırı (iettype=4, hız serbest) + sınır ortasında kesintiler. Sığ uçları kesmek jeti
+  yer değiştirdi, çözmedi.
+- Düzeltme (bu sürüm):
+  1. `min_open_depth_m: 0` — kutu kenarı baştan sona tek açık sınır (394 düğüm), duvar yok.
+  2. Sınırda su seviyesi **+ gevşetmeli hız** (`bctides.in`: `394 4 -4 0 0`, ardından tek satırda `1.0 0.3` =
+     içeri akışta CMEMS'e tam, dışarı akışta %30 bağlanma). `uv3D.th.nc` 2B'de CMEMS günlük 3B `uo/vo`'nun
+     derinlik ortalamasından (yeni `depth_avg_series`), 6 saatlik, 2 seviyeye kopyalanarak yazılıyor.
+  3. Yatay viskozite açık: `ihorcon=1`, `hvis_coef0=0.025` (sınır gürültüsünü söndürür); `dramp=1.0`.
+  Not: SCHISM gevşetme katsayılarını `vobc1 vobc2` olarak **aynı satırdan** okur (`schism_init.F90:2644`); iki satıra
+  bölünce "Bad real number in item 2 of list input" hatası veriyor.
+- Doğrulama (bulut, aynı gerçek CMEMS+ERA5 dosyaları, 6–9 Eylül, 3 gün 2B, 1 çekirdek ≈ 72 dk): **kararlı**. Hız maks
+  0,47 m/s (54,5 h; Karaburun batı kıyısında 1–5 m derinlikteki düğümler, 7 m/s rüzgâr altında — fiziksel), hiçbir adımda
+  hız > 0,5 m/s düğümü yok, su seviyesi −0,15..+0,09 m (CMEMS sınırı ± rüzgâr yığılması), kuru düğüm 0. Medyan hız iç körfez
+  1–3 cm/s, orta 2–6, dış 4–9 cm/s. Önceki koşuda 63,5 h'te 7,1 m/s olan yerde şimdi 0,34 m/s.
+- Kullanıcı makinesinde tekrar: `31` (hgrid, 394 açık düğüm) → `33 --mode 2d --days 7` → `32 all --mode 2d` → WSL `mpirun -np 22`.
+
+Sonraki: 7 günlük sonucu Sayın & Eronat desenleriyle karşılaştır; 3B (11 sigma) aynı hafta; `40_schism_to_opendrift.py`.

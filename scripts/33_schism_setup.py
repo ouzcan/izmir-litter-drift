@@ -56,10 +56,11 @@ def write_bctides(out: Path, start: datetime, opens: list[int], mode: str):
         if mode == "smoke":
             lines.append(f"{n} 2 0 0 0 !elev const, no flow, no T/S"); lines.append("0.0 !eth")
         elif mode == "2d":
-            lines.append(f"{n} 4 0 0 0 !elev2D.th.nc, no flow")
+            lines.append(f"{n} 4 -4 0 0 !elev2D.th.nc + uv3D.th.nc (gevşetmeli)")
+            lines.append(f"{S.get('uv_relax_in', 1.0)} {S.get('uv_relax_out', 0.3)} !inflow, outflow relax (tek satır)")
         else:
-            lines.append(f"{n} 4 4 4 4 !elev2D, uv3D, TEM_3D, SAL_3D .th.nc")
-            lines.append("1. !inflow relax (uv)"); lines.append("1. !outflow relax (uv)")
+            lines.append(f"{n} 4 -4 4 4 !elev2D, uv3D (gevşetmeli), TEM_3D, SAL_3D .th.nc")
+            lines.append(f"{S.get('uv_relax_in', 1.0)} {S.get('uv_relax_out', 0.3)} !inflow, outflow relax (uv)")
             lines.append("1. !tobc"); lines.append("1. !sobc")
     (out / "bctides.in").write_text("\n".join(lines) + "\n")
 
@@ -97,7 +98,8 @@ def main():
     kv = dict(ipre=0, ibc=1 if a.mode != "3d" else 0, ibtp=0 if a.mode != "3d" else 1,
               rnday=days, dt=a.dt, nspool=nspool, ihfskip=ihfskip,
               start_year=start.year, start_month=start.month, start_day=start.day, start_hour=start.hour, utc_start=0,
-              ics=2, ncor=1, ihot=0, dramp=0.5, nchi=0, ishapiro=1, shapiro0=0.5, indvel=0, ihorcon=0,
+              ics=2, ncor=1, ihot=0, dramp=1.0, nchi=0, ishapiro=1, shapiro0=0.5, indvel=0,
+              ihorcon=int(S.get("ihorcon", 1)), hvis_coef0=float(S.get("hvis_coef0", 0.025)),
               nws=0 if a.mode == "smoke" else 2, iwind_form=1, ihconsv=0, isconsv=0, itur=3 if a.mode == "3d" else 0,
               h0=0.05, rmaxvel=5.0, inunfl=0, nhot=0, iout_sta=0,
               slam0=27.0, sfea0=38.5, thetai=0.6, dtb_max=30.0, dtb_min=10.0,

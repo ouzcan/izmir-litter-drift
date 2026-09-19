@@ -137,6 +137,30 @@ def write_th(path, arr, dt_s):
     ds.time.attrs["long_name"] = "seconds since model start (record k = k*time_step)"
     ds.to_netcdf(path, format="NETCDF4")
 
+def depth_avg_series(var, bx, by, bh, tax):
+    """CMEMS 3B alanını düğüm derinliğine (bh) kadar dikeyde ortalar → (time, nb)."""
+    da = open_cm(var)
+    iy, ix = nearest_valid_index(da, bx, by)
+    da_t = to_regular_time(da, tax)
+    prof = da_t.values[:, :, iy, ix]            # (time, depth, nb)
+    dep = da.depth.values
+    out = np.full((len(tax), len(bx)), np.nan, "f4")
+    for j in range(len(bx)):
+        col = prof[:, :, j]                      # (time, depth)
+        ok = np.isfinite(col[0])
+        if not ok.any(): continue
+        m = ok & (dep <= max(bh[j], dep[ok][0] + 0.1))
+        if m.sum() == 0: m = ok.copy(); m[np.where(ok)[0][1:]] = False
+        # katman kalınlığı ağırlıklı ortalama
+        d = dep[m]; edges = np.r_[0, 0.5 * (d[1:] + d[:-1]), min(bh[j], d[-1] + (d[-1] - d[-2] if len(d) > 1 else 1))]
+        w = np.diff(edges); w = np.maximum(w, 0)
+        out[:, j] = (col[:, m] * w).sum(1) / w.sum()
+    bad = np.isnan(out).any(0)
+    if bad.any():
+        good = np.where(~bad)[0]
+        for j in np.where(bad)[0]: out[:, j] = out[:, good[np.argmin(np.abs(good - j))]]
+    return out
+
 # ============================================================================ boundary
 def cmd_boundary(a):
     run = RUNS / "schism" / a.run
@@ -164,7 +188,15 @@ def cmd_boundary(a):
     log(f"elev2D: ortalama {eta.mean():+.3f} m, aralık {eta.min():+.2f}..{eta.max():+.2f} m, {len(tax)} kayıt @ {dt_e:.0f} s")
     write_th(run / "elev2D.th.nc", eta[:, :, None, None], dt_e)
     if a.mode == "2d":
-        log("2d: yalnız elev2D.th.nc yazıldı (bctides: 4 0 0 0)"); return
+        # 2B: derinlik-ortalamalı CMEMS hızı, sınırda gevşetmeli hız koşulu (ifltype=-4) için uv3D.th.nc
+        nvrt, *_ = read_vgrid(run / "vgrid.in")
+        dt_u = float(S.get("bnd3d_dt_s", 21600))
+        taxu = np.arange(t0, t1 + np.timedelta64(1, "h"), np.timedelta64(int(dt_u), "s"))
+        U2 = depth_avg_series("uo", bx, by, bh, taxu); V2 = depth_avg_series("vo", bx, by, bh, taxu)
+        arr = np.stack([np.repeat(U2[:, :, None], nvrt, axis=2), np.repeat(V2[:, :, None], nvrt, axis=2)], axis=-1)
+        write_th(run / "uv3D.th.nc", arr, dt_u)
+        log(f"uv3D (2B, derinlik-ort.): |u| medyan {np.nanmedian(np.hypot(U2, V2)):.3f} maks {np.nanmax(np.hypot(U2, V2)):.3f} m/s, {len(taxu)} kayıt @ {dt_u:.0f} s")
+        log("2d: elev2D.th.nc + uv3D.th.nc yazıldı (bctides: 4 -4 0 0)"); return
 
     # --- 3D: sigma seviyeleri
     nvrt, sig, hc, tb, tf = read_vgrid(run / "vgrid.in")
