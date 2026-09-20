@@ -1,0 +1,13 @@
+kayıt 336 × 30 dk; dosya 14
+t=  0.5 h  elev -0.004..+0.008 m | hız maks 0.023; medyan iç 0.0008 orta 0.0012 dış 0.0011 m/s | n(hız>0.5)=0
+t= 21.5 h  elev -0.018..+0.049 m | hız maks 0.316; medyan iç 0.0147 orta 0.0288 dış 0.0370 m/s | n(hız>0.5)=0
+t= 42.5 h  elev -0.161..-0.052 m | hız maks 0.425; medyan iç 0.0239 orta 0.0533 dış 0.0543 m/s | n(hız>0.5)=0
+t= 63.5 h  elev -0.080..+0.035 m | hız maks 0.347; medyan iç 0.0283 orta 0.0532 dış 0.0521 m/s | n(hız>0.5)=0
+t= 84.5 h  elev +0.038..+0.102 m | hız maks 0.210; medyan iç 0.0086 orta 0.0220 dış 0.0319 m/s | n(hız>0.5)=0
+t=105.5 h  elev -0.021..+0.025 m | hız maks 0.170; medyan iç 0.0090 orta 0.0127 dış 0.0250 m/s | n(hız>0.5)=0
+t=126.5 h  elev -0.038..+0.019 m | hız maks 0.183; medyan iç 0.0133 orta 0.0133 dış 0.0227 m/s | n(hız>0.5)=0
+t=147.5 h  elev +0.051..+0.097 m | hız maks 0.151; medyan iç 0.0047 orta 0.0081 dış 0.0148 m/s | n(hız>0.5)=0
+kuru düğüm (son): 0
+3B yüzey hızı: maks 0.253 m/s; medyan iç 0.0184 orta 0.0310 dış 0.0650 (t=168.0 h)
+temperature yüzey (son): 20.37..23.73, medyan 22.94
+salinity yüzey (son): 39.28..39.36, medyan 39.33

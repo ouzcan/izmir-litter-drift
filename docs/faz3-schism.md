@@ -137,3 +137,25 @@ Sonraki: 7 günlük sonucu Sayın & Eronat desenleriyle karşılaştır; 3B (11 
   `mpirun -np <çekirdek+6> ~/schism/pschism 6`. 2B'de 2 yeter. Az verilirse "Too few scribes" ile durur.
 - Koşu klasörü ayrı: `--run izmir3d` (33 hgrid'i `izmir`den kopyalar); 2B sonuçları `izmir/` içinde kalır.
 - Tahmini süre (kullanıcı, 18 hesap çekirdeği): 7 gün 3B ≈ 30–45 dk.
+
+## 3B 7 günlük koşu ve OpenDrift bağlantısı — 20 Eylül 2026
+
+- **3B 7 gün (kullanıcı, 18 çekirdek + 6 scribe): kararlı.** Derinlik-ort. alan 2B ile aynı düzeyde (hız maks 0,43 m/s);
+  yüzey katmanı derinlik-ortalamasının ~2 katı: t=168 h yüzey medyan iç körfez 1,8 cm/s, orta 3,1, dış 6,5 cm/s, maks 0,25 m/s.
+  Yüzey sıcaklığı 20,4–23,7 °C (medyan 22,9; başlangıç 23,4 — ısı akısı kapalı, soğuma sınırdan/karışımdan), tuzluluk 39,28–39,36.
+- `40_schism_to_opendrift.py`: scribe çıktısı (out2d + horizontalVelX/Y) → OpenDrift `reader_schism_native` biçimi
+  (`elev`, `dahv[time,node,2]`, üçgenlenmiş `SCHISM_hgrid_face_nodes`, `time` saniye). OpenDrift 1.14 okuyucusu enlem-boylam
+  ağda 3B hızı kullanamıyor (`use_3d` kapanır; kodda `pdb.set_trace()` bile var) → 3B koşunun **en üst sigma katmanı**
+  `dahv` adıyla yazılır; yüzen çöp için gereken zaten yüzey akıntısı. 2B koşuda `--layer dav`. Kuru düğümde hız 0.
+  Dosya: 7 gün 30 dk × 76 bin düğüm ≈ 280 MB.
+- `41_opendrift_schism.py`: OceanDrift; akıntı SCHISM, rüzgâr ERA5 (CDS dosyası `x_wind/y_wind` adlarıyla `data/processed/`e
+  yazılır), kıyı maskesi GSHHS f (`reader_global_landmask`; ağın kıyısı da GSHHS f — tutarlı), windage %2, difüzyon 5 m²/s,
+  RK4, stranding. Stokes drift yok (CMEMS dalga iç körfezi çözmüyor; sonraki: WWM ya da rüzgârdan parametre).
+  Çıktı: `runs/opendrift/<koşu>_<nokta>_<tarih>/{track.nc, track.png, summary.txt, zones.csv, endpoints.csv}` —
+  `zones.csv` kıyı bölgesi payları (`config/coast_zones.csv`), `endpoints.csv` parçacık başına son konum (web sitesi girdisi).
+- Bulut testi (2B derinlik-ort. alan, 6–9 Eylül, Bostanlı 300 parçacık): tümü 39 saatte kıyıya vurdu; %97 İnciraltı–Balçova
+  (Z04), %3 Bostanlı (Z01); medyan vurma süresi 25 saat. 6–7 Eylül'ün K–KD rüzgârı çöpü iç körfezi güneye geçirip
+  İnciraltı sahiline yığıyor (`docs/opendrift_bostanli_2d_test.png`). Koşu süresi 4 s.
+- Bilinen sınırlar: okuyucu dışbükey zarf + Delaunay doğrusal interpolasyon (kara üzerinden komşuluk; kıyıya vurma GSHHS
+  maskesiyle karar verildiği için pratikte sorun çıkmadı); `config/coast_zones.csv` Z12 satırında eksik virgül düzeltildi.
+
