@@ -67,3 +67,13 @@ schism:
   bnd3d_dt_s: 21600         # uv/T/S sınır kayıt aralığı (günlük CMEMS → 6 saatlik interpolasyon)
   nvrt: 2                   # 2D için 2 (ivcor=2); 3D'de 11 (10 katman)
   dt_s: 60
+
+# Yıllık koşu (50_year_pipeline.py): 3B, aylık parçalar, ısı akısı kapalı (her ay CMEMS T/S ile yeniden başlar)
+year_run:
+  start: 2025-09-01          # dahil
+  end: 2026-09-01            # hariç → Eylül 2025 – Ağustos 2026
+  spinup_days: 5             # her ayın koşusu ay başından bu kadar önce başlar; bu kısım atılır
+  run_prefix: y              # runs/schism/y2025-09 …
+  nproc: 18                  # hesap çekirdeği (mpirun -np = nproc + 3 scribe)
+  output_min: 60             # model çıktı aralığı (dk) — OpenDrift için saatlik yeter
+  hours_per_7days: 0.45      # süre tahmini için (3B 7 gün ≈ 25 dk ölçüldü)

@@ -14,7 +14,7 @@ Alt komutlar (depo kökünden, conda 'litter' ortamı; indirme kullanıcının b
 Zaman ekseni: SCHISM .th.nc dosyalarında kayıt k → t = k*time_step (t=0 = --start 00:00 UTC).
 """
 from __future__ import annotations
-import argparse, glob, os
+import argparse, glob, os, re
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -46,27 +46,55 @@ def cmd_download(a):
                   minimum_latitude=lat0 - 0.25, maximum_latitude=lat1 + 0.25,
                   start_datetime=t0.isoformat(), end_datetime=t1.isoformat(),
                   output_filename=out.name, output_directory=str(FDIR))
-    # ERA5
+    # ERA5 — CDS isteği ay ay (yıl×ay×gün listeleri çarpım olduğundan çok aylı tek istek fazla veri çeker)
     import cdsapi
     A = bbox("A_il_kiyisi")
     out = FDIR / f"era5_{tag}.nc"
     if out.exists(): log("atla", out.name)
     else:
-        days = [t0 + timedelta(days=i) for i in range((t1 - t0).days + 1)]
-        req = {"product_type": ["reanalysis"],
-               "variable": ["10m_u_component_of_wind", "10m_v_component_of_wind", "mean_sea_level_pressure",
-                            "2m_temperature", "2m_dewpoint_temperature"],
-               "year": sorted({f"{d.year}" for d in days}), "month": sorted({f"{d.month:02d}" for d in days}),
-               "day": sorted({f"{d.day:02d}" for d in days}), "time": [f"{h:02d}:00" for h in range(24)],
-               "area": [A[3], A[0], A[2], A[1]], "data_format": "netcdf", "download_format": "unarchived"}
-        log("ERA5 istek (kuyruk birkaç dk sürebilir)")
-        cdsapi.Client().retrieve("reanalysis-era5-single-levels", req, str(out))
+        months = sorted({(d.year, d.month) for d in [t0 + timedelta(days=i) for i in range((t1 - t0).days + 1)]})
+        parts = []
+        for (y, m) in months:
+            part = FDIR / f"era5_part_{y}-{m:02d}.nc"; parts.append(part)
+            if part.exists(): log("atla", part.name); continue
+            days = [t0 + timedelta(days=i) for i in range((t1 - t0).days + 1)]
+            dd = sorted({f"{d.day:02d}" for d in days if (d.year, d.month) == (y, m)})
+            req = {"product_type": ["reanalysis"],
+                   "variable": ["10m_u_component_of_wind", "10m_v_component_of_wind", "mean_sea_level_pressure",
+                                "2m_temperature", "2m_dewpoint_temperature"],
+                   "year": [f"{y}"], "month": [f"{m:02d}"], "day": dd, "time": [f"{h:02d}:00" for h in range(24)],
+                   "area": [A[3], A[0], A[2], A[1]], "data_format": "netcdf", "download_format": "unarchived"}
+            log(f"ERA5 istek {y}-{m:02d} ({len(dd)} gün; kuyruk birkaç dk sürebilir)")
+            cdsapi.Client().retrieve("reanalysis-era5-single-levels", req, str(part))
+        if len(parts) == 1: parts[0].rename(out)
+        else:
+            dss = []
+            for pth in parts:
+                d = xr.open_dataset(pth)
+                if "valid_time" in d.dims: d = d.rename({"valid_time": "time"})
+                for v in ("number", "expver"):
+                    if v in d: d = d.drop_vars(v)
+                dss.append(d)
+            xr.concat(dss, dim="time").sortby("time").to_netcdf(out)
+            for d in dss: d.close()
+            log(f"ERA5 {len(parts)} aylık parça birleştirildi → {out.name} (parçalar silinebilir)")
     log("indirme tamam:", FDIR)
 
 # ============================================================================ yardımcılar
+WINDOW = None   # (start, end) — cmd_boundary/cmd_sflux ayarlar; dosya seçiminde bu aralığı kapsayan dosya yeğlenir
+
+def _tag_range(path):
+    m = re.search(r"(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})\.nc$", str(path))
+    return (np.datetime64(m.group(1)), np.datetime64(m.group(2))) if m else None
+
 def newest(pattern):
+    """İstenen zaman penceresini kapsayan en yeni dosya; yoksa en yeni dosya."""
     fs = sorted(glob.glob(str(FDIR / pattern)), key=os.path.getmtime)
     if not fs: raise SystemExit(f"{FDIR}/{pattern} yok — önce `download`")
+    if WINDOW:
+        cov = [f for f in fs if (r := _tag_range(f)) and r[0] <= np.datetime64(WINDOW[0]) and r[1] >= np.datetime64(WINDOW[1])]
+        if cov: return cov[-1]
+        log(f"uyarı: {pattern} için {WINDOW[0]}..{WINDOW[1]} aralığını kapsayan dosya yok, en yenisi kullanılıyor")
     return fs[-1]
 
 def read_hgrid(p: Path):
@@ -163,6 +191,7 @@ def depth_avg_series(var, bx, by, bh, tax):
 
 # ============================================================================ boundary
 def cmd_boundary(a):
+    global WINDOW; WINDOW = (a.start, a.end)
     run = RUNS / "schism" / a.run
     xyz, opens = read_hgrid(run / "hgrid.gr3")
     bn = np.concatenate(opens); bx, by, bh = xyz[bn, 0], xyz[bn, 1], xyz[bn, 2]
@@ -260,6 +289,7 @@ def spec_humidity(d2m_K, p_Pa):
     return 0.622 * e / (p_Pa - 0.378 * e)
 
 def cmd_sflux(a):
+    global WINDOW; WINDOW = (a.start, a.end)
     run = RUNS / "schism" / a.run; sd = run / "sflux"; sd.mkdir(exist_ok=True)
     ds = xr.open_dataset(newest("era5_*.nc"))
     if "valid_time" in ds.dims: ds = ds.rename({"valid_time": "time"})

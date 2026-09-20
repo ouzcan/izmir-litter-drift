@@ -9,7 +9,7 @@ Salım: `sources` → config/sources.csv'deki koordinatlı kaynaklar (alan için
 Çıktı: runs/opendrift/matrix_<run>_<mode>_<tarih>/{matrix.csv, endpoints.csv, cells.geojson (grid), matrix.png, summary.txt}
 """
 from __future__ import annotations
-import argparse, csv, json
+import argparse, csv, glob, json
 from datetime import datetime, timedelta
 from pathlib import Path
 import numpy as np
@@ -67,11 +67,14 @@ def main():
 
     od_dir = RUNS / "schism" / a.run / "opendrift"
     f = Path(a.file) if a.file else (od_dir / "schism_surface.nc" if (od_dir / "schism_surface.nc").exists() else od_dir / "schism_dav.nc")
-    if not f.exists(): raise SystemExit(f"{f} yok — önce 40_schism_to_opendrift.py --run {a.run}")
+    if "*" in str(f): first = sorted(glob.glob(str(f)))
+    else: first = [f] if f.exists() else []
+    if not first: raise SystemExit(f"{f} yok — önce 40_schism_to_opendrift.py --run {a.run}")
+    f0 = Path(first[0])                       # statik bilgiler (ağ, derinlik) ilk dosyadan
     start = datetime.fromisoformat(a.start); dur = timedelta(days=a.days)
     x0, x1, y0, y1 = bbox("B_model")
     out = RUNS / "opendrift" / f"matrix_{a.run}_{a.mode}_{start:%Y%m%d}{('_' + a.tag) if a.tag else ''}"; out.mkdir(parents=True, exist_ok=True)
-    sx, sy = sea_nodes(f)
+    sx, sy = sea_nodes(f0)
 
     # --- salım noktaları
     if a.mode == "sources":
@@ -127,7 +130,7 @@ def main():
     json.dump(meta, open(out / "meta.json", "w", encoding="utf-8"), ensure_ascii=False)
     ep = agg.endpoints_from_result(o.result)
     rows, zone, zn = agg.aggregate(out, origins, ep, meta)
-    try: agg.plot_matrix(out, origins, ep, rows, zn, meta, coast_file=f)
+    try: agg.plot_matrix(out, origins, ep, rows, zn, meta, coast_file=f0)
     except Exception as e:  # noqa: BLE001
         log("çizim atlandı:", e)
     log("çıktılar:", out)

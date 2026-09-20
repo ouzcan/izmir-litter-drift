@@ -61,7 +61,10 @@ def main():
 
     od_dir = RUNS / "schism" / a.run / "opendrift"
     f = Path(a.file) if a.file else (od_dir / "schism_surface.nc" if (od_dir / "schism_surface.nc").exists() else od_dir / "schism_dav.nc")
-    if not f.exists(): raise SystemExit(f"{f} yok — önce 40_schism_to_opendrift.py --run {a.run}")
+    if "*" in str(f): first = sorted(glob.glob(str(f)))
+    else: first = [f] if f.exists() else []
+    if not first: raise SystemExit(f"{f} yok — önce 40_schism_to_opendrift.py --run {a.run}")
+    f0 = Path(first[0])                       # statik bilgiler (ağ, derinlik) ilk dosyadan
     start = datetime.fromisoformat(a.start); dur = timedelta(days=a.days)
     if a.lon is None: a.lon, a.lat = point(a.site); site = a.site
     else: site = f"{a.lon:.3f}E_{a.lat:.3f}N"
@@ -69,7 +72,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
 
     cur = reader_schism_native.Reader(filename=str(f), name="schism_" + a.run, use_3d=False)
-    log(f"akıntı: {f.name} ({cur.start_time} → {cur.end_time}, adım {cur.time_step}); hız alanı: {xr.open_dataset(f).attrs.get('velocity_source')}")
+    log(f"akıntı: {f.name} ({cur.start_time} → {cur.end_time}, adım {cur.time_step}); hız alanı: {xr.open_dataset(f0).attrs.get('velocity_source')}")
     readers = [cur]
     if not a.no_wind:
         wf = prepare_wind(start, start + dur)

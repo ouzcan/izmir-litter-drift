@@ -87,6 +87,8 @@ def main():
     ap.add_argument("--dt", type=float, default=float(S.get("dt_s", 60)))
     ap.add_argument("--nvrt", type=int, default=None)
     ap.add_argument("--template", default=None, help="param.nml şablonu (varsayılan config/schism/param.nml.template)")
+    ap.add_argument("--out_min", type=float, default=30, help="çıktı aralığı (dk); yıllık koşularda 60")
+    ap.add_argument("--lean", action="store_true", help="3B'de yalnız elev + derinlik-ort. + yatay hız yaz (T/S/z/rüzgâr yok) — yıllık koşular")
     a = ap.parse_args()
     out = RUNS / "schism" / a.run
     out.mkdir(parents=True, exist_ok=True)
@@ -107,7 +109,7 @@ def main():
     if not tpl.exists(): raise SystemExit(f"param şablonu yok: {tpl} (SCHISM kaynak: sample_inputs/param.nml)")
     t = tpl.read_text()
 
-    spool_s = 1800; nspool = int(round(spool_s / a.dt)); ihfskip = nspool * 24   # 30 dk çıktı, 12 saatlik yığın (out2d_N.nc)
+    spool_s = a.out_min * 60; nspool = int(round(spool_s / a.dt)); ihfskip = int(round(12 * 3600 / a.dt))   # 12 saatlik yığın (out2d_N.nc)
     kv = dict(ipre=0, ibc=1 if a.mode != "3d" else 0, ibtp=0 if a.mode != "3d" else 1,
               rnday=days, dt=a.dt, nspool=nspool, ihfskip=ihfskip,
               start_year=start.year, start_month=start.month, start_day=start.day, start_hour=start.hour, utc_start=0,
@@ -123,9 +125,9 @@ def main():
                     "ihconsv": int(S.get("ihconsv3d", 0)), "isconsv": 0, "itr_met": 3, "h_tvd": 5.0})
     for k, v in kv.items(): t = set_param(t, k, v)
     # çıktılar: su seviyesi, derinlik ortalamalı hız, (3D) yatay hız, T, S
-    d3 = 1 if a.mode == "3d" else 0
-    for k, v in {"iof_hydro(1)": 1, "iof_hydro(16)": 1, "iof_hydro(14)": d3,           # elev, derinlik-ort. hız, rüzgâr (2B)
-                 "iof_hydro(26)": d3, "iof_hydro(18)": d3, "iof_hydro(19)": d3, "iof_hydro(25)": d3,  # 3B: yatay hız, T, S, z
+    d3 = 1 if a.mode == "3d" else 0; full = 0 if a.lean else d3
+    for k, v in {"iof_hydro(1)": 1, "iof_hydro(16)": 1, "iof_hydro(14)": full,         # elev, derinlik-ort. hız, rüzgâr (2B)
+                 "iof_hydro(26)": d3, "iof_hydro(18)": full, "iof_hydro(19)": full, "iof_hydro(25)": full,  # 3B: yatay hız, T, S, z
                  "iof_hydro(15)": 0}.items():
         t = set_param(t, k, v)
     (out / "param.nml").write_text(t)
@@ -140,7 +142,7 @@ def main():
         write_const_prop(out, "tvd.prop", ne, 1)     # itr_met=3: TVD her elemanda (h_tvd'den sığda kod zaten upwind kullanır)
     (out / "outputs").mkdir(exist_ok=True)
     log(f"{a.mode}: {nn} düğüm, {ne} eleman, açık sınır {opens}, nvrt={nvrt}, dt={a.dt}s, {days} gün, nspool={nspool}, ihfskip={ihfskip}")
-    nscribe = 6 if a.mode == "3d" else 2   # scribe sayısı ≥ 3B çıktı değişkeni sayısı (+1): horizontalVelX/Y, T, S, zCoordinates
+    nscribe = (3 if a.lean else 6) if a.mode == "3d" else 2   # scribe ≥ 3B çıktı değişkeni sayısı (+1): horizontalVelX/Y (+T, S, z)
     log(f"koş (WSL): cd {out} && rm -rf outputs/* && mpirun -np <hesap çekirdeği + {nscribe}> ~/schism/pschism {nscribe}")
 
 if __name__ == "__main__":

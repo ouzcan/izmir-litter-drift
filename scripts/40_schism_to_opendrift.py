@@ -41,6 +41,9 @@ def main():
     ap.add_argument("--layer", default="top", help="top (3B en üst sigma), dav (derinlik-ort.), ya da seviye no")
     ap.add_argument("--stride", type=int, default=1)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--t0", default=None, help="bu zamandan önceki kayıtları at (ısınma payı), örn. 2025-09-01")
+    ap.add_argument("--t1", default=None, help="bu zamandan sonraki kayıtları at (dahil değil)")
+    ap.add_argument("--epoch", default="2025-01-01", help="time birimi: 'seconds since <epoch>' — aylık dosyalar aynı epoch ile birleşir")
     a = ap.parse_args()
     run = RUNS / "schism" / a.run
     f2 = stacks(run, "out2d")
@@ -53,27 +56,32 @@ def main():
     o = xr.open_mfdataset(f2, combine="nested", concat_dim="time", data_vars="minimal", coords="minimal", compat="override")
     x = o.SCHISM_hgrid_node_x.values; y = o.SCHISM_hgrid_node_y.values; dep = o.depth.values.astype("f4")
     faces = tri_faces(o.SCHISM_hgrid_face_nodes.values)
-    t = o.time.values[::a.stride]
-    elev = o.elevation.isel(time=slice(None, None, a.stride)).values.astype("f4")
-    dry = o.dryFlagNode.isel(time=slice(None, None, a.stride)).values.astype("i1")
+    tall = o.time.values
+    sel = np.ones(len(tall), bool)
+    if a.t0: sel &= tall >= np.datetime64(a.t0)
+    if a.t1: sel &= tall < np.datetime64(a.t1)
+    idx = np.where(sel)[0][::a.stride]
+    if len(idx) == 0: raise SystemExit("seçilen zaman aralığında kayıt yok")
+    t = tall[idx]
+    elev = o.elevation.isel(time=idx).values.astype("f4")
+    dry = o.dryFlagNode.isel(time=idx).values.astype("i1")
     if use3d:
         hx = xr.open_mfdataset(fx, combine="nested", concat_dim="time", data_vars="minimal", coords="minimal", compat="override")
         hy = xr.open_mfdataset(fy, combine="nested", concat_dim="time", data_vars="minimal", coords="minimal", compat="override")
         nv = hx.sizes["nSCHISM_vgrid_layers"]
         k = nv - 1 if a.layer == "top" else int(a.layer) - 1
-        u = hx.horizontalVelX.isel(nSCHISM_vgrid_layers=k, time=slice(None, None, a.stride)).values.astype("f4")
-        v = hy.horizontalVelY.isel(nSCHISM_vgrid_layers=k, time=slice(None, None, a.stride)).values.astype("f4")
+        u = hx.horizontalVelX.isel(nSCHISM_vgrid_layers=k, time=idx).values.astype("f4")
+        v = hy.horizontalVelY.isel(nSCHISM_vgrid_layers=k, time=idx).values.astype("f4")
         src = f"horizontalVel sigma seviyesi {k+1}/{nv} ({'yüzey' if k == nv-1 else 'ara'})"
     else:
-        u = o.depthAverageVelX.isel(time=slice(None, None, a.stride)).values.astype("f4")
-        v = o.depthAverageVelY.isel(time=slice(None, None, a.stride)).values.astype("f4")
+        u = o.depthAverageVelX.isel(time=idx).values.astype("f4")
+        v = o.depthAverageVelY.isel(time=idx).values.astype("f4")
         src = "depthAverageVel (2B)"
     u = np.nan_to_num(u); v = np.nan_to_num(v); elev = np.nan_to_num(elev)
     u[dry == 1] = 0; v[dry == 1] = 0
 
-    t0 = np.datetime64(t[0]).astype("datetime64[s]")
-    base = str(t0)[:10] + " 00:00:00"
-    secs = ((t - np.datetime64(base.replace(" ", "T"))) / np.timedelta64(1, "s")).astype("f8")
+    base = a.epoch + " 00:00:00"
+    secs = ((t - np.datetime64(a.epoch)) / np.timedelta64(1, "s")).astype("f8")
     ds = xr.Dataset(
         {
             "SCHISM_hgrid_node_x": (("nSCHISM_hgrid_node",), x, {"standard_name": "longitude", "units": "degrees_east", "long_name": "node x-coordinate"}),
@@ -93,7 +101,7 @@ def main():
     enc = {k: {"zlib": True, "complevel": 3} for k in ("elev", "dahv")}
     ds.to_netcdf(out, format="NETCDF4", encoding=enc)
     sp = np.hypot(u, v)
-    log(f"{len(t)} kayıt ({str(t[0])[:16]} → {str(t[-1])[:16]}, adım {secs[1]-secs[0]:.0f} s), {len(x)} düğüm, {len(faces)} üçgen; hız kaynağı: {src}")
+    log(f"{len(t)} kayıt ({str(t[0])[:16]} → {str(t[-1])[:16]}, adım {(secs[1]-secs[0]) if len(secs) > 1 else 0:.0f} s), {len(x)} düğüm, {len(faces)} üçgen; hız kaynağı: {src}")
     log(f"|u| medyan {np.median(sp[-1]):.3f} maks {sp.max():.3f} m/s; dosya {out} ({out.stat().st_size/1e6:.0f} MB)")
 
 if __name__ == "__main__":
