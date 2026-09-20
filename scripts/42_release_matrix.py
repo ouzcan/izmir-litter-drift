@@ -121,7 +121,7 @@ def main():
     origins = [{"origin": ids[k], "name": names[ids[k]], "lon": lon_s[k], "lat": lat_s[k]} for k in range(len(ids))]
     with open(out / "origins.csv", "w", encoding="utf-8", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=["origin", "name", "lon", "lat"]); w.writeheader()
-        for o in origins: w.writerow({**o, "lon": f"{o['lon']:.5f}", "lat": f"{o['lat']:.5f}"})
+        for og in origins: w.writerow({**og, "lon": f"{og['lon']:.5f}", "lat": f"{og['lat']:.5f}"})
     meta = {"mode": a.mode, "run": a.run, "start": a.start, "days": a.days, "windage": a.windage, "cell_km": a.cell_km,
             "header": f"koşu: {a.run} | {a.mode} | {start:%Y-%m-%d} +{a.days:g} gün | {len(ids)} nokta, {len(pts)*n_per} parçacık | windage {a.windage} | rüzgâr {'yok' if a.no_wind else 'ERA5'}"}
     json.dump(meta, open(out / "meta.json", "w", encoding="utf-8"), ensure_ascii=False)

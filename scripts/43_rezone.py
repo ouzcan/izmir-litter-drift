@@ -29,7 +29,11 @@ def main():
         meta.setdefault("mode", "sources")
     if "header" not in meta:
         meta["header"] = (out / "summary.txt").read_text(encoding="utf-8").splitlines()[0] if (out / "summary.txt").exists() else out.name
-    ep = agg.endpoints_from_csv(out / "endpoints.csv", origins)
+    if (out / "endpoints.csv").exists():
+        ep = agg.endpoints_from_csv(out / "endpoints.csv", origins)
+    else:                                           # toplulaştırma yarıda kalmışsa track.nc'den üret
+        import xarray as xr
+        ds = xr.open_dataset(out / "track.nc"); ep = agg.endpoints_from_result(ds); ds.close()
     rows, zone, zn = agg.aggregate(out, origins, ep, meta)
     coast = a.coast or (RUNS / "schism" / str(meta.get("run", "izmir")) / "opendrift" / "schism_surface.nc")
     try: agg.plot_matrix(out, origins, ep, rows, zn, meta, coast_file=coast)
