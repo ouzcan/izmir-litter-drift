@@ -1,0 +1,10 @@
+koşu: izmir3d | P_bostanli (27.0940E 38.4515N) | 2026-09-06 +7 gün | 500 parçacık | windage 0.02 | rüzgâr ERA5
+süre: 21 saat simüle edildi (22 çıktı adımı)
+son durum: active=1, stranded=499
+kıyıya vuran: 499/500 (%100)
+kıyıya vurma süresi (saat): medyan 15.0, %25-%75 14.0-16.0, ilk 1.0, son 20.0
+
+bölge dağılımı (son konum):
+  Z04 İnciraltı–Balçova        kıyıda               492  %98
+  Z01 Bostanlı–Mavişehir       kıyıda                 7  %1
+  Z04 İnciraltı–Balçova        denizde/alan dışı      1  %0

@@ -159,3 +159,20 @@ Sonraki: 7 günlük sonucu Sayın & Eronat desenleriyle karşılaştır; 3B (11 
 - Bilinen sınırlar: okuyucu dışbükey zarf + Delaunay doğrusal interpolasyon (kara üzerinden komşuluk; kıyıya vurma GSHHS
   maskesiyle karar verildiği için pratikte sorun çıkmadı); `config/coast_zones.csv` Z12 satırında eksik virgül düzeltildi.
 
+## Bostanlı testi (3B yüzey alanı) ve kaynak → kıyı matrisi — 20 Eylül 2026
+
+- Kullanıcı makinesi, `41 --run izmir3d` (500 parçacık, 6 Eylül 00:00, %2 windage): **tümü 20 saatte kıyıya vurdu, %98
+  İnciraltı–Balçova (Z04), medyan 15 saat** (2B derinlik-ort. alanla 25 saatti: yüzey akıntısı rüzgârla aynı yönde ve ~2 kat
+  hızlı). Yörüngeler iç körfezi düz bir hatla GGB yönünde geçiyor (`runs/opendrift/izmir3d_P_bostanli_20260906/track.png`).
+- `42_release_matrix.py`: (a) `--mode sources` — `config/sources.csv`'deki 23 alan-içi kaynaktan (S06–S08 koordinatsız,
+  M03/M04/F04 alan dışı) ilk 3 gün her 6 saatte 50 parçacık; (b) `--mode grid` — `--cell_km` aralıklı deniz hücrelerinden
+  24 saat arayla 3 salım (web sitesinin "nereden atarsam" katmanı). Kaynaklar en yakın ≥2 m derinlikli ağ düğümüne
+  kaydırılır (iç körfezde 400–1100 m açığa; kaynak koordinatları zaten yaklaşık). Çıktı: `matrix.csv` (kaynak/hücre ×
+  bölge payları, kıyıya vurma oranı, medyan süre, baskın bölge), `endpoints.csv`, `cells.geojson` (grid), `matrix.png`.
+- Bulut testi (2B alan, 6–9 Eylül): kaynaklar — iç körfez doğu kaynakları (Meles, Manda, Arap, Laka, Alsancak, Bayraklı) →
+  %88–97 Karşıyaka–Bayraklı kıyısı 6–9 saatte; Bostanlı/Karşıyaka/Mavişehir → %87–100 İnciraltı–Balçova 18–24 saatte;
+  Gediz ağzı → %60 Güzelbahçe–Urla 42 saatte; Foça/Mordoğan → Karaburun kıyısı. Izgara (2 km, 696 hücre): %89 kıyıya
+  vurdu, Karaburun batı+doğu kıyıları en büyük alıcı; orta körfez kuzey yarısı Karaburun'a, güney yarısı Güzelbahçe–Urla'ya
+  gidiyor; dış körfez KB'si alan dışına çıkıyor (`docs/matrix_grid_2d_test.png`). Tek haftalık K rüzgârı senaryosu — mevsimsel
+  genelleme için yıllık koşu gerekir.
+
