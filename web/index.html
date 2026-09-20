@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bu Çöp Nereye Gider? — İzmir Körfezi</title>
+<meta name="description" content="İzmir Körfezi'nde denize atılan bir çöp akıntı ve rüzgârla nereye gider? Haritada bir noktaya tıkla, modelin ne söylediğini gör.">
+<meta property="og:title" content="Bu Çöp Nereye Gider? — İzmir Körfezi">
+<meta property="og:description" content="Denize attığın çöp hangi kıyıya vurur? Akıntı modeline dayalı interaktif harita.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<link href="vendor/maplibre-gl.css" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="map" role="application" aria-label="İzmir Körfezi haritası"></div>
+
+<header id="topbar">
+  <div class="brand">
+    <span class="logo">🌊</span>
+    <div>
+      <h1 data-i18n="title">Bu çöp nereye gider?</h1>
+      <p class="sub" data-i18n="subtitle">İzmir Körfezi · akıntı modeline dayalı interaktif harita</p>
+    </div>
+  </div>
+  <div class="controls">
+    <select id="period" aria-label="Dönem"></select>
+    <button id="btn-layers" class="chip" data-i18n="layers">Katmanlar</button>
+    <button id="btn-about" class="chip" data-i18n="how">Nasıl çalışır?</button>
+    <button id="btn-lang" class="chip lang" aria-label="Language">EN</button>
+  </div>
+</header>
+
+<aside id="panel">
+  <button id="panel-toggle" class="chip" aria-label="Paneli küçült/büyüt">▾</button>
+  <section class="card hint" id="hint">
+    <p data-i18n="hint">Denizde bir noktaya <b>tıkla</b> (kıyıdan da olur) — çöpün nereye sürükleneceğini gör.</p>
+    <div class="items" id="items"></div>
+  </section>
+
+  <section class="card result hidden" id="result">
+    <div class="res-head">
+      <span class="res-emoji" id="res-emoji">🧴</span>
+      <div>
+        <h2 id="res-title">—</h2>
+        <p class="muted" id="res-sub">—</p>
+      </div>
+    </div>
+    <div id="res-bars" class="bars"></div>
+    <p class="fact" id="res-fact"></p>
+    <div class="row">
+      <button id="btn-again" class="btn" data-i18n="again">Bir tane daha at</button>
+      <button id="btn-share" class="btn ghost" data-i18n="share">Paylaş</button>
+    </div>
+  </section>
+
+  <section class="card stats">
+    <div class="stat"><b id="st-total">–</b><span data-i18n="st_total">atılan çöp</span></div>
+    <div class="stat"><b id="st-24h">–</b><span data-i18n="st_24h">son 24 saat</span></div>
+    <div class="stat"><b id="st-mine">0</b><span data-i18n="st_mine">senin attıkların</span></div>
+  </section>
+
+  <section class="card">
+    <h3 data-i18n="top_zones">En çok çöp biriken kıyılar</h3>
+    <ol id="top-zones" class="ranking"></ol>
+  </section>
+
+  <section class="card feed">
+    <h3 data-i18n="live">Canlı akış</h3>
+    <ul id="feed"></ul>
+  </section>
+
+  <footer class="card foot">
+    <p data-i18n="foot">Model: SCHISM (3B, ~110 m) + OpenDrift; rüzgâr ERA5. Bilimsel bir çalışmanın ön sürümüdür; tek bir haftanın hava koşullarını yansıtır.</p>
+    <p><a id="repo-link" href="#" target="_blank" rel="noopener">GitHub</a> · <a href="#" id="link-method" data-i18n="method">Yöntem</a> · <a href="#" id="link-data" data-i18n="data">Veri</a></p>
+  </footer>
+</aside>
+
+<div id="layers" class="popover hidden">
+  <label><input type="checkbox" id="ly-cells" checked> <span data-i18n="ly_cells">Varış haritası (hücre → baskın kıyı)</span></label>
+  <label><input type="checkbox" id="ly-throws" checked> <span data-i18n="ly_throws">Herkesin çöpleri</span></label>
+  <label><input type="checkbox" id="ly-heat"> <span data-i18n="ly_heat">Yoğunluk (ısı haritası)</span></label>
+  <label><input type="checkbox" id="ly-sources"> <span data-i18n="ly_sources">Bilinen kaynaklar (dere ağızları, limanlar)</span></label>
+  <div id="legend" class="legend"></div>
+</div>
+
+<div id="about" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <button class="close" id="about-close" aria-label="Kapat">×</button>
+    <div id="about-tr">
+      <h2>Nasıl çalışır?</h2>
+      <p>İzmir Körfezi için ~110 m çözünürlüklü üç boyutlu bir hidrodinamik model (SCHISM) kurduk: Copernicus deniz verileriyle sınırlanıyor, ERA5 rüzgârıyla sürülüyor. Yüzey akıntısı alanı üzerinde yüzen parçacıklar (OpenDrift) rüzgârın %2'si kadar ek sürüklenmeyle ilerliyor; kıyıya değen parçacık orada kalıyor.</p>
+      <p>Haritayı 1 km'lik hücrelere böldük; her hücreden yüzlerce sanal parçacık saldık ve nerede karaya vurduklarını saydık. Tıkladığın noktanın hücresi için bu dağılımı gösteriyoruz; çizilen yol, o hücreden çıkan gerçek bir model parçacığının vardığı noktaya doğru temsili bir çizgidir.</p>
+      <h3>Sınırlar</h3>
+      <ul>
+        <li>Şu an tek bir haftanın (6–13 Eylül 2026, kuzey rüzgârı) sonuçları var; yıllık koşu sürüyor, mevsimler eklenecek.</li>
+        <li>Dalga kaynaklı Stokes sürüklenmesi yok; kıyıya vuran çöp yeniden denize dönmüyor; batan/parçalanan çöp modellenmiyor.</li>
+        <li>Model alanının batı sınırından çıkan çöp "körfez dışı" sayılır (Sakız/Koyun adaları yönü).</li>
+      </ul>
+      <h3>Veri ve kod</h3>
+      <p>Tüm kod ve yöntem açık: <a id="about-repo" href="#" target="_blank" rel="noopener">GitHub deposu</a>. Hücre verisi <a href="data/cells.json">cells.json</a>, kıyı bölgeleri <a href="data/zones.json">zones.json</a>. Attığın çöpler anonim bir cihaz kimliğiyle kaydedilir; kişisel veri toplanmaz.</p>
+    </div>
+    <div id="about-en" class="hidden">
+      <h2>How it works</h2>
+      <p>We built a ~110 m three-dimensional hydrodynamic model of İzmir Bay (SCHISM), forced at the open boundary by Copernicus Marine data and driven by ERA5 winds. Floating particles (OpenDrift) move with the surface current plus 2% of the wind speed; a particle that touches the coast stays there.</p>
+      <p>The bay is divided into 1 km cells; from each cell we released hundreds of virtual particles and counted where they beached. When you click, we show that distribution for the nearest cell; the drawn path is a schematic line towards the landing point of a real model particle released from that cell.</p>
+      <h3>Limitations</h3>
+      <ul>
+        <li>Currently one week of conditions (6–13 September 2026, northerly winds); a full-year run is in progress and seasons will be added.</li>
+        <li>No wave-driven Stokes drift; beached litter does not refloat; sinking and fragmentation are not modelled.</li>
+        <li>Litter leaving the western model boundary counts as "outside the bay" (towards Chios / Oinousses).</li>
+      </ul>
+      <h3>Data and code</h3>
+      <p>Everything is open: <a id="about-repo-en" href="#" target="_blank" rel="noopener">GitHub repository</a>. Cell data <a href="data/cells.json">cells.json</a>, coast zones <a href="data/zones.json">zones.json</a>. Throws are stored with an anonymous device id; no personal data is collected.</p>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="vendor/maplibre-gl.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="config.js"></script>
+<script src="app.js" defer></script>
+</body>
+</html>
