@@ -57,7 +57,8 @@ def build_origins(mode, f0, x0, x1, y0, y1, cell_km):
     gx = np.arange(x0 + dx / 2, x1, dx); gy = np.arange(y0 + dy / 2, y1, dy)
     GX, GY = np.meshgrid(gx, gy); GX = GX.ravel(); GY = GY.ravel()
     _, _, dist = m42.snap(GX, GY, sx, sy, max_km=99); keep = dist <= 0.6 * cell_km
-    org = [{"origin": f"C{k:05d}", "name": f"C{k:05d}", "lon": float(GX[keep][k]), "lat": float(GY[keep][k])} for k in range(int(keep.sum()))]
+    KX, KY = GX[keep], GY[keep]
+    org = [{"origin": f"C{k:05d}", "name": f"C{k:05d}", "lon": float(KX[k]), "lat": float(KY[k])} for k in range(KX.size)]
     return org, cell_km * 300.0
 
 def run_month(a, mode, ym, m0, m1):
@@ -65,6 +66,10 @@ def run_month(a, mode, ym, m0, m1):
     if (out / "endpoints.csv").exists() and not a.force: log(mode, ym, "bitmiş, atla"); return
     files, need = surface_files(m0, m1, a.track_days)
     if not (PROC / f"schism_surface_{ym}.nc").exists(): log(mode, ym, "yüzey dosyası yok, atla"); return
+    yend = date.fromisoformat(str(Y.get("end", "2026-09-01")))
+    eksik = [q for q in need if not (PROC / f"schism_surface_{q}.nc").exists() and date.fromisoformat(q + "-01") < yend]
+    if eksik and not a.allow_truncated:
+        log(mode, ym, f"izleme ayı eksik ({', '.join(eksik)}) → ay sonunda salınanlar takip edilemez, atla (--allow_truncated ile yine de koş)"); return
     out.mkdir(parents=True, exist_ok=True)
     from opendrift.models.oceandrift import OceanDrift
     from opendrift.readers import reader_schism_native, reader_netCDF_CF_generic, reader_global_landmask
@@ -73,9 +78,9 @@ def run_month(a, mode, ym, m0, m1):
     origins, radius = build_origins(mode, files[0], x0, x1, y0, y1, a.cell_km)
     t0 = datetime(m0.year, m0.month, m0.day); t1 = datetime(m1.year, m1.month, m1.day)
     if mode == "sources":
-        times = [t0 + timedelta(hours=h) for h in np.arange(0, (t1 - t0).total_seconds() / 3600, a.pulse_h)]; n_per = a.n_src
+        times = [t0 + timedelta(hours=float(h)) for h in np.arange(0.0, (t1 - t0).total_seconds() / 3600.0, float(a.pulse_h))]; n_per = a.n_src
     else:
-        times = [t0 + timedelta(days=d) for d in np.arange(0, (t1 - t0).days, a.grid_every_days)]; n_per = a.n_grid
+        times = [t0 + timedelta(days=float(d)) for d in np.arange(0.0, float((t1 - t0).days), float(a.grid_every_days))]; n_per = a.n_grid
     cur = reader_schism_native.Reader(filename=[str(f) for f in files] if len(files) > 1 else str(files[0]), name="schism_year", use_3d=False)
     end = min(t1 + timedelta(days=a.track_days), cur.end_time)
     readers = [cur]
@@ -118,6 +123,7 @@ def main():
     ap.add_argument("--windage", type=float, default=float(P["windage"]["base"])); ap.add_argument("--no-wind", action="store_true")
     ap.add_argument("--diffusivity", type=float, default=float(P["horizontal_diffusivity_m2s"]["base"]))
     ap.add_argument("--tag", default=""); ap.add_argument("--keep_track", action="store_true", help="track.nc'yi sakla (büyük)")
+    ap.add_argument("--allow_truncated", action="store_true", help="sonraki ayın yüzey dosyası yokken de koş (izleme ay sonunda kesilir)")
     a = ap.parse_args()
     modes = ["sources", "grid"] if a.mode == "both" else [a.mode]
     for ym, m0, m1 in month_list(a):
