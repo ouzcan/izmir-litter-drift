@@ -18,6 +18,7 @@ import xarray as xr
 from common import RUNS, CFG, params, bbox
 import importlib
 m41 = importlib.import_module("41_opendrift_schism")
+import od_agg as agg
 
 P = params(); S = P.get("schism", {})
 COSLAT = np.cos(np.deg2rad(38.5))
@@ -29,19 +30,6 @@ def sea_nodes(f: Path, min_depth=2.0):
     x = d.SCHISM_hgrid_node_x.values; y = d.SCHISM_hgrid_node_y.values; h = d.depth.values
     ok = h >= min_depth
     return x[ok], y[ok]
-
-def mesh_coast(f: Path):
-    """Ağ sınır kenarları (yalnız bir üçgene ait kenarlar) → kıyı çizgisi parçaları [(x0,y0),(x1,y1)]."""
-    d = xr.open_dataset(f, decode_times=False)
-    x = d.SCHISM_hgrid_node_x.values; y = d.SCHISM_hgrid_node_y.values
-    tri = d.SCHISM_hgrid_face_nodes.values.astype(int) - 1
-    e = np.vstack([tri[:, [0, 1]], tri[:, [1, 2]], tri[:, [2, 0]]]); e.sort(axis=1)
-    u, c = np.unique(e, axis=0, return_counts=True); b = u[c == 1]
-    return [((x[i], y[i]), (x[j], y[j])) for i, j in b]
-
-def draw_coast(ax, f):
-    from matplotlib.collections import LineCollection
-    ax.add_collection(LineCollection(mesh_coast(f), colors="0.35", linewidths=0.5, zorder=1))
 
 def snap(lon, lat, sx, sy, max_km=2.0):
     """Noktayı en yakın deniz düğümüne kaydır (kara/sığ salımı önlemek için)."""
@@ -129,74 +117,17 @@ def main():
         o.seed_elements(lon=lo, lat=la, radius=radius, number=n_per, time=t, wind_drift_factor=a.windage, origin_marker=k)
     o.run(duration=dur, time_step=int(P["time_step_s"]), time_step_output=3600 * 3, outfile=str(out / "track.nc"))
 
-    # --- toplulaştırma
-    ds = o.result
-    omv = ds["origin_marker"].values
-    om = (np.nanmax(omv, axis=1) if omv.ndim == 2 else omv).astype(int)   # geç salınanlarda ilk adımlar NaN
-    lon = ds["lon"].ffill("time").isel(time=-1).values; lat = ds["lat"].ffill("time").isel(time=-1).values
-    stat = ds["status"].values.astype(float); fm = ds["status"].attrs.get("flag_meanings", "").split(); meaning = {i: n for i, n in enumerate(fm)}
-    last = np.array([r[np.isfinite(r)][-1] if np.isfinite(r).any() else np.nan for r in stat])
-    stranded = np.array([meaning.get(int(v), "?") == "stranded" if np.isfinite(v) else False for v in last])
-    tv = ds["time"].values; hours = (tv - tv[0]) / np.timedelta64(1, "h")
-    t_end = np.array([hours[np.where(np.isfinite(r))[0][-1]] if np.isfinite(r).any() else np.nan for r in stat])
-    t_rel = np.array([hours[np.where(np.isfinite(r))[0][0]] if np.isfinite(r).any() else np.nan for r in stat])
-    Z = m41.zones(); zids = [z[0] for z in Z]
-    zone = np.array([m41.zone_of(x, y, Z)[0] if np.isfinite(x) else "NA" for x, y in zip(lon, lat)])
-    with open(out / "endpoints.csv", "w", encoding="utf-8", newline="") as fh:
-        w = csv.writer(fh); w.writerow(["origin", "lon_end", "lat_end", "stranded", "t_release_h", "t_end_h", "zone_id"])
-        for i in range(len(lon)):
-            if np.isfinite(lon[i]): w.writerow([ids[om[i]], f"{lon[i]:.5f}", f"{lat[i]:.5f}", int(stranded[i]), f"{t_rel[i]:.0f}", f"{t_end[i]:.1f}", zone[i]])
-    rows = []
-    for k, i in enumerate(ids):
-        m = om == k; n = int(m.sum())
-        if n == 0: continue
-        r = {"origin": i, "name": names[i], "lon": f"{lon_s[k]:.4f}", "lat": f"{lat_s[k]:.4f}", "n": n,
-             "stranded_frac": f"{stranded[m].mean():.3f}", "at_sea_frac": f"{(~stranded[m]).mean():.3f}",
-             "t_strand_med_h": f"{np.median((t_end - t_rel)[m & stranded]):.1f}" if (m & stranded).any() else ""}
-        for z in zids: r[z] = f"{((zone == z) & m & stranded).sum() / n:.3f}"
-        r["Z12"] = f"{(((zone == 'Z12') & m) | (m & ~stranded)).sum() / n:.3f}"   # denizde kalan + alan dışı
-        dom = max(zids, key=lambda z: float(r[z])); r["dominant"] = dom; r["dominant_frac"] = r[dom]
-        rows.append(r)
-    with open(out / "matrix.csv", "w", encoding="utf-8", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
-    zn = {z[0]: z[1] for z in Z}
-    lines = [f"koşu: {a.run} | {a.mode} | {start:%Y-%m-%d} +{a.days:g} gün | {len(ids)} nokta, {len(pts)*n_per} parçacık | windage {a.windage} | rüzgâr {'yok' if a.no_wind else 'ERA5'}",
-             f"kıyıya vuran toplam: %{100*stranded.mean():.0f}; medyan vurma süresi {np.median((t_end-t_rel)[stranded]):.1f} h" if stranded.any() else "kıyıya vuran yok", ""]
-    if a.mode == "sources":
-        lines.append(f"{'kaynak':6s} {'ad':28s} {'vuran':>6s} {'süre':>6s}  baskın bölge")
-        for r in rows: lines.append(f"{r['origin']:6s} {r['name'][:28]:28s} {100*float(r['stranded_frac']):5.0f}% {r['t_strand_med_h']:>6s}  {r['dominant']} {zn.get(r['dominant'],'')} %{100*float(r['dominant_frac']):.0f}")
-    else:
-        tot = {z: 0.0 for z in zids}
-        for r in rows:
-            for z in zids: tot[z] += float(r[z])
-        lines.append("bölge payları (tüm hücreler ort.): " + ", ".join(f"{z} %{100*tot[z]/len(rows):.0f}" for z in zids if tot[z] > 0))
-        feats = [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [float(r["lon"]), float(r["lat"])]},
-                  "properties": {k: (float(v) if k not in ("origin", "name", "dominant") and v != "" else v) for k, v in r.items()}} for r in rows]
-        json.dump({"type": "FeatureCollection", "cell_km": a.cell_km, "run": a.run, "start": a.start, "days": a.days,
-                   "zones": zn, "features": feats}, open(out / "cells.geojson", "w", encoding="utf-8"), ensure_ascii=False)
-    (out / "summary.txt").write_text("\n".join(lines), encoding="utf-8"); print("\n".join(lines))
-
-    # --- görsel
-    try:
-        import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
-        fig, ax = plt.subplots(figsize=(11, 8)); draw_coast(ax, f)
-        act = ~stranded & np.isfinite(lon)
-        if a.mode == "sources":
-            cmap = plt.get_cmap("tab20", len(ids))
-            for k in range(len(ids)):
-                m = (om == k) & stranded
-                if m.any(): ax.scatter(lon[m], lat[m], s=6, color=cmap(k), alpha=0.7)
-                ax.plot(lon_s[k], lat_s[k], "k^", ms=8); ax.annotate(ids[k], (lon_s[k], lat_s[k]), fontsize=8, xytext=(3, 3), textcoords="offset points")
-            if act.any(): ax.scatter(lon[act], lat[act], s=4, color="0.5", alpha=0.5, label="denizde")
-            ax.set_title(f"kaynaklardan kıyıya vuranlar — {a.run}, {start:%d.%m.%Y} +{a.days:g} g, windage %{a.windage*100:.0f}")
-        else:
-            zl = sorted(set(r["dominant"] for r in rows)); cm = plt.get_cmap("tab20", max(len(zl), 1))
-            for j, z in enumerate(zl):
-                rr = [r for r in rows if r["dominant"] == z]
-                ax.scatter([float(r["lon"]) for r in rr], [float(r["lat"]) for r in rr], s=(a.cell_km * 9) ** 2, marker="s", color=cm(j), label=f"{z} {zn.get(z,'')}")
-            ax.legend(fontsize=7, loc="upper left"); ax.set_title(f"hücre → baskın varış bölgesi — {a.run}, {start:%d.%m.%Y} +{a.days:g} g")
-        ax.set_xlim(x0, x1); ax.set_ylim(y0, y1); ax.set_aspect(1 / COSLAT); ax.grid(alpha=0.3)
-        fig.savefig(out / "matrix.png", dpi=120, bbox_inches="tight")
+    # --- toplulaştırma (od_agg ortak modülü; 43_rezone.py aynı işlevi endpoints.csv'den tekrar yapar)
+    origins = [{"origin": ids[k], "name": names[ids[k]], "lon": lon_s[k], "lat": lat_s[k]} for k in range(len(ids))]
+    with open(out / "origins.csv", "w", encoding="utf-8", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=["origin", "name", "lon", "lat"]); w.writeheader()
+        for o in origins: w.writerow({**o, "lon": f"{o['lon']:.5f}", "lat": f"{o['lat']:.5f}"})
+    meta = {"mode": a.mode, "run": a.run, "start": a.start, "days": a.days, "windage": a.windage, "cell_km": a.cell_km,
+            "header": f"koşu: {a.run} | {a.mode} | {start:%Y-%m-%d} +{a.days:g} gün | {len(ids)} nokta, {len(pts)*n_per} parçacık | windage {a.windage} | rüzgâr {'yok' if a.no_wind else 'ERA5'}"}
+    json.dump(meta, open(out / "meta.json", "w", encoding="utf-8"), ensure_ascii=False)
+    ep = agg.endpoints_from_result(o.result)
+    rows, zone, zn = agg.aggregate(out, origins, ep, meta)
+    try: agg.plot_matrix(out, origins, ep, rows, zn, meta, coast_file=f)
     except Exception as e:  # noqa: BLE001
         log("çizim atlandı:", e)
     log("çıktılar:", out)

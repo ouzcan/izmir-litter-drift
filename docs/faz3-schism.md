@@ -176,3 +176,21 @@ Sonraki: 7 günlük sonucu Sayın & Eronat desenleriyle karşılaştır; 3B (11 
   gidiyor; dış körfez KB'si alan dışına çıkıyor (`docs/matrix_grid_2d_test.png`). Tek haftalık K rüzgârı senaryosu — mevsimsel
   genelleme için yıllık koşu gerekir.
 
+## Izgara matrisi (3B yüzey, 1 km, 6–13 Eylül) ve kıyı bölgelerinin yenilenmesi — 20 Eylül 2026
+
+- Kullanıcı, `42 --mode grid --cell_km 1`: 2.627 deniz hücresi × 3 salım × 20 = 157.620 parçacık, **%100 kıyıya vurdu**,
+  medyan 15 saat. İlk sürümde %31 "Z12" çıktı; `endpoints.csv` incelendi: ~28.500 parçacık batı sınırından çıkıp Koyun
+  Adaları/Sakız'a (26,2–26,35°D) vurmuş (gerçek "alan dışı"), ~12.000 Ildır–Gülbahçe körfezine, ~4.500 Karaburun batı
+  kıyısına, ~2.000 orta körfez adalarına — bunlar kıyı kutularının kapsamadığı gerçek kıyılardı.
+- `config/coast_zones.csv` yenilendi: kutular **sırayla** denenir (ilk eşleşen); adalar önce. Yeni: Z13 Uzunada, Z14 Hekim–
+  Pırnarlı–Yassıca adaları, Z15 Ildır–Gülbahçe körfezi, Z16 Karaburun batı kıyısı; Z07 Çamaltı–Sasalı'yı, Z10 Çandarlı'yı
+  kapsayacak şekilde genişletildi; Z03/Z04 38,38'e indirildi. Alan içinde kutusuz kalan kıyı noktası "Z00" olarak sayılır
+  ve uyarı basılır (bulut testinde 0'a indi). Z12 = alan dışına çıkan + denizde kalan.
+- Toplulaştırma `scripts/od_agg.py`'ye alındı (41/42 ortak); `43_rezone.py` var olan koşuyu OpenDrift'i tekrar koşturmadan
+  yeni kutularla yeniden toplulaştırır (`origins.csv`/`meta.json` yoksa `cells.geojson`/`matrix.csv`'den okur).
+- Bulut (2B alan, 3 gün) ızgara haritası yeni kutularla: orta körfezin doğu yarısı Uzunada ve orta körfez adalarına, kuzey
+  yarısı Karaburun doğu kıyısına, güneybatı Ildır–Gülbahçe'ye; batı sınırına yakın hücreler alan dışına. Uzunada ve orta
+  körfez adaları K rüzgârında belirgin birer tuzak (`docs/matrix_grid_2d_test.png`).
+- Sınır: batıdan çıkan parçacıklar alan dışında yalnız rüzgârla sürüklenir (akıntı 0) — Yunan adalarına varış sayısı nitel.
+  Makale için alanın batıya (Sakız'a kadar) genişletilmesi düşünülebilir; şimdilik "alan dışı" olarak raporlanır.
+

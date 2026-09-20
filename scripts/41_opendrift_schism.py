@@ -41,18 +41,7 @@ def prepare_wind(start: datetime, end: datetime) -> Path:
     out = PROC / f"era5_wind_od_{start:%Y%m%d}_{end:%Y%m%d}.nc"
     ds.to_netcdf(out); return out
 
-def zones():
-    rows = list(csv.DictReader(open(CFG / "coast_zones.csv", encoding="utf-8")))
-    def fl(v):
-        try: return float(v)
-        except (TypeError, ValueError): return None
-    return [(r["zone_id"], r["name"], *(fl(r.get(k)) for k in ("lon_min", "lon_max", "lat_min", "lat_max"))) for r in rows]
-
-def zone_of(lon, lat, Z):
-    for zid, name, x0, x1, y0, y1 in Z:
-        if x0 is None: continue
-        if x0 <= lon <= x1 and y0 <= lat <= y1: return zid, name
-    return "Z12", "Körfez dışı / açık Ege"
+from od_agg import zones, zone_of   # bölge ataması ortak modülde (kutular sırayla; adalar önce)
 
 def main():
     ap = argparse.ArgumentParser()
