@@ -1,0 +1,29 @@
+koşu: izmir3d | sources | 2026-09-06 +7 gün | 23 nokta, 14950 parçacık | windage 0.02 | rüzgâr ERA5
+kıyıya vuran toplam: %100; medyan vurma süresi 3.0 h
+
+bölge payları (tüm salım noktaları ort.): Z02 %22, Z03 %6, Z04 %37, Z14 %3, Z05 %14, Z15 %1, Z06 %7, Z07 %2, Z08 %4, Z10 %4
+
+kaynak ad                            vuran   süre  baskın bölge
+S01    Gediz Nehri ağzı               100%   24.0  Z14 Hekim–Pırnarlı–Yassıca adaları %59
+S02    Meles Çayı ağzı                100%    3.0  Z02 Karşıyaka–Bayraklı %94
+S03    Manda Çayı ağzı                100%    6.0  Z02 Karşıyaka–Bayraklı %88
+S04    Arap Deresi ağzı               100%    6.0  Z02 Karşıyaka–Bayraklı %79
+S05    Laka Deresi ağzı               100%    6.0  Z02 Karşıyaka–Bayraklı %80
+S09    Bostanlı Deresi ağzı           100%   15.0  Z04 İnciraltı–Balçova %100
+S10    Poligon Deresi ağzı            100%    3.0  Z04 İnciraltı–Balçova %100
+S11    Balçova Deresi ağzı            100%    3.0  Z04 İnciraltı–Balçova %100
+S12    Ilıca Deresi ağzı              100%    3.0  Z05 Güzelbahçe–Urla %100
+P01    Alsancak Limanı                100%    3.0  Z02 Karşıyaka–Bayraklı %84
+P02    Pasaport İskelesi              100%    6.0  Z04 İnciraltı–Balçova %51
+P03    Konak İskelesi                 100%    3.0  Z04 İnciraltı–Balçova %75
+P04    Karşıyaka İskelesi             100%   15.0  Z04 İnciraltı–Balçova %96
+P05    Bostanlı İskelesi              100%   15.0  Z04 İnciraltı–Balçova %100
+P06    Bayraklı İskelesi              100%    6.0  Z02 Karşıyaka–Bayraklı %88
+P07    Üçkuyular İskelesi             100%    3.0  Z04 İnciraltı–Balçova %100
+M01    Levent Marina (Mavişehir)      100%   15.0  Z04 İnciraltı–Balçova %100
+M02    Setur Çeşme Marina             100%    3.0  Z08 Çeşme–Alaçatı %100
+F01    Foça balıkçı barınağı          100%    3.0  Z06 Karaburun–Mordoğan (doğu kıyısı) %70
+F02    Urla İskele balıkçı barınağı   100%    3.0  Z05 Güzelbahçe–Urla %100
+F03    Güzelbahçe balıkçı barınağı    100%    3.0  Z05 Güzelbahçe–Urla %100
+F05    Karaburun/Mordoğan barınağı    100%    3.0  Z06 Karaburun–Mordoğan (doğu kıyısı) %87
+I01    Aliağa–Nemrut liman bölgesi    100%    3.0  Z10 Aliağa–Çandarlı–Dikili %94

@@ -194,3 +194,21 @@ Sonraki: 7 günlük sonucu Sayın & Eronat desenleriyle karşılaştır; 3B (11 
 - Sınır: batıdan çıkan parçacıklar alan dışında yalnız rüzgârla sürüklenir (akıntı 0) — Yunan adalarına varış sayısı nitel.
   Makale için alanın batıya (Sakız'a kadar) genişletilmesi düşünülebilir; şimdilik "alan dışı" olarak raporlanır.
 
+## İlk tam matris — 6–13 Eylül 2026 haftası, 3B yüzey alanı (kullanıcı makinesi, 20 Eylül)
+
+**Kaynak modu** (23 kaynak × 13 salım × 50 = 14.950 parçacık): tümü kıyıya vurdu; medyan 3 saat (kaynaklar kıyıya 0,4–2 km).
+Ortalama bölge payları: İnciraltı–Balçova %37, Karşıyaka–Bayraklı %22, Güzelbahçe–Urla %14, Karaburun doğu %7, Kordon–Konak %6.
+- İç körfez doğu grubu (Meles, Manda, Arap, Laka, Alsancak Limanı, Bayraklı İskelesi) → %79–94 **Karşıyaka–Bayraklı**, 3–6 saat.
+- İç körfez kuzey/batı grubu (Bostanlı Deresi, Karşıyaka ve Bostanlı iskeleleri, Levent Marina) → %96–100 **İnciraltı–Balçova**, 15 saat.
+- Güney kıyı kaynakları (Poligon, Balçova, Üçkuyular; Konak %75, Pasaport %51) → İnciraltı–Balçova, 3–6 saat; Ilıca Deresi → Güzelbahçe–Urla.
+- **Gediz ağzı** → %59 Hekim–Pırnarlı–Yassıca adaları, 24 saat (2B alanda Güzelbahçe–Urla'ydı: yüzey akıntısı adalara yöneltiyor).
+- Foça → Karaburun doğu kıyısı %70; Mordoğan → yerinde %87; Aliağa → yerinde %94; Çeşme → yerinde %100.
+
+**Izgara modu** (2.627 hücre × 3 salım × 20 = 157.620): tümü kıyıya vurdu, medyan 15 saat. Karaburun doğu kıyısı %29, alan dışı
+(Koyun Adaları/Sakız) %19, Çeşme %12, Ildır–Gülbahçe %10, Güzelbahçe–Urla %9, Foça–Gediz %5, Karaburun batı %4, Aliağa %4,
+adalar %5, İnciraltı %2. Uzunada ve orta körfez adaları K rüzgârında tuzak.
+
+Yorum: 6–13 Eylül'de ERA5 rüzgârı K–KD, ortalama 4,4, maks 12,6 m/s (tipik yaz sonu etezyen). Bu rejimde çöp iç körfezde
+1 günden kısa sürede karşı kıyıya geçiyor, körfezin batı yarısı Ege'ye boşalıyor. Kış lodos rejiminde tablo tersine dönecek —
+bu yüzden **yıllık koşu** şart. Tek haftalık sonuç makalede "senaryo örneği", web sitesinde "bu haftanın haritası" olarak kullanılabilir.
+

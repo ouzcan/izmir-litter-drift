@@ -1,0 +1,4 @@
+koşu: izmir3d | grid | 2026-09-06 +7 gün | 2627 nokta, 157620 parçacık | windage 0.02 | rüzgâr ERA5
+kıyıya vuran toplam: %100; medyan vurma süresi 15.0 h
+
+bölge payları (tüm salım noktaları ort.): Z04 %2, Z13 %2, Z14 %3, Z05 %9, Z15 %10, Z06 %29, Z16 %4, Z07 %5, Z08 %12, Z10 %4, Z12 %19
