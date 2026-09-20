@@ -27,8 +27,19 @@ def log(*a): print("[41]", *a, flush=True)
 def prepare_wind(start: datetime, end: datetime) -> Path:
     """ERA5 (CDS yeni biçim: valid_time, standard_name 'unknown') → OpenDrift'in okuyacağı CF dosyası."""
     fs = sorted(glob.glob(str(RAW / "forcing" / "era5_*.nc")))
+    fs = [f for f in fs if "era5_part_" not in Path(f).name]
     if not fs: raise SystemExit("data/raw/forcing/era5_*.nc yok — 32_forcing_to_schism.py download")
+    # istenen pencereyi kapsayan dosya; yoksa en çok örtüşen (dosya adı: era5_<başlangıç>_<bitiş>.nc)
+    import re
+    def rng(f):
+        m = re.search(r"(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})\.nc$", f)
+        return (np.datetime64(m.group(1)), np.datetime64(m.group(2)) + np.timedelta64(1, "D")) if m else (np.datetime64("1900-01-01"), np.datetime64("2100-01-01"))
+    s0, s1 = np.datetime64(start), np.datetime64(end)
+    def overlap(f):
+        r0, r1 = rng(f); return max(np.timedelta64(0, "s"), min(r1, s1) - max(r0, s0))
+    fs.sort(key=lambda f: (overlap(f), Path(f).stat().st_mtime))
     ds = xr.open_dataset(fs[-1])
+    if overlap(fs[-1]) < (s1 - s0): print(f"[41] uyarı: ERA5 dosyası {Path(fs[-1]).name} istenen pencereyi tam kapsamıyor")
     if "valid_time" in ds.dims: ds = ds.rename({"valid_time": "time"})
     for v in ("number", "expver"):
         if v in ds: ds = ds.drop_vars(v)
@@ -39,7 +50,10 @@ def prepare_wind(start: datetime, end: datetime) -> Path:
     ds["latitude"].attrs = {"standard_name": "latitude", "units": "degrees_north"}; ds["longitude"].attrs = {"standard_name": "longitude", "units": "degrees_east"}
     PROC.mkdir(parents=True, exist_ok=True)
     out = PROC / f"era5_wind_od_{start:%Y%m%d}_{end:%Y%m%d}.nc"
-    ds.to_netcdf(out); return out
+    if out.exists():
+        try: out.unlink()
+        except OSError: pass
+    ds.load().to_netcdf(out); ds.close(); return out
 
 from od_agg import zones, zone_of   # bölge ataması ortak modülde (kutular sırayla; adalar önce)
 

@@ -46,9 +46,24 @@ tail -f runs/schism/run_year.log
 Durum: `python scripts\50_year_pipeline.py status` (Windows). Bilgisayar uyumasın (güç ayarı); WSL penceresi kapansa da
 `nohup` ile devam eder — ama Windows oturumu kapanırsa WSL durur.
 
-## Sonrası
+## Koşu başladı — 20 Eylül 2026, 16:13 (kullanıcı saati)
 
-- `51_year_opendrift.py`: aylık salım partileri (kaynaklar 6 saatte bir, ızgara haftada bir; her parti 30 gün izlenir),
-  `52_seasonal_maps.py`: mevsim/ay bazında matrisler, kıyı yükü haritası, web sitesi GeoJSON'ları.
+- İlk deneme `mpirun` "not enough slots" ile durdu: Open MPI slotu fiziksel çekirdek sayıyor (24 iş parçacığı = 12 slot);
+  `--oversubscribe` eklendi. Hız: ~4,1 adım/s (21 süreç, /mnt/c üzerinden saatlik çıktı) → 35 günlük ay ≈ 3,4 saat,
+  **yıl ≈ 40 saat** (25 dk/7 gün ölçümünden yavaş; muhtemelen aşırı abonelik ve /mnt/c yazma).
+- Girdi özeti (32 çıktısı): sınırda kış aylarında |u| 0,6 m/s'ye, ERA5 rüzgârı Ocak–Nisan'da 20 m/s'ye çıkıyor; Şubat–Mart
+  başlangıç tuzluluğu 34–36'ya düşüyor (Gediz tatlı suyu CMEMS'te görünüyor) — mevsimsel fark belirgin olacak.
+
+## OpenDrift yıl akışı (hazır, bulutta test edildi)
+
+- `51_year_opendrift.py`: her ay ayrı parti; kaynaklar 6 saatte bir 10 parçacık (23 kaynak → ~28 bin/ay), ızgara 1 km haftada
+  bir 10 parçacık (2.627 hücre → ~120 bin/ay); her parti ay sonu + 30 gün izlenir (sonraki ay dosyası varsa okunur).
+  Çıktı `runs/opendrift/year/<mode>_<YYYY-MM>/`; `track.nc` silinir (endpoints.csv yeter). Yüzey dosyası hazır olan aylar
+  otomatik seçilir; koşu sürerken ay ay çalıştırılabilir: `python scripts\51_year_opendrift.py --mode both`.
+- `52_seasonal_maps.py`: yıl, mevsim (DJF/MAM/JJA/SON) ve ay bazında kaynak matrisleri, hücre→baskın bölge haritaları,
+  kıyı yükü payları; web sitesi girdileri `runs/opendrift/year/summary/web/{cells.geojson, sources.json, zones.json}` —
+  hücre/kaynak başına `{dönem: {strand, t_med_h, zones: {bölge: pay}}}`.
+- Duyarlılık: `51 --windage 0.01 --tag w1`, `--windage 0.03 --tag w3`, `--no-wind --tag nowind`, `--diffusivity 1 --tag d1`;
+  `52 --tag w1` ayrı özet üretir.
 - Duyarlılık: windage %1/%3, rüzgârsız, difüzyon 1/10 m²/s; 2B yıl (5 saat) yüzey/derinlik-ort. karşılaştırması.
 - Stokes drift ve ısı akısı (ERA5 radyasyon) makale hakem turu için ikinci sürüme.
