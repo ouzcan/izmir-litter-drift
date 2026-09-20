@@ -113,4 +113,27 @@ Sonraki: kullanıcı makinesinde gerçek CMEMS ile 7 gün 2B; ardından 3B (11 k
   1–3 cm/s, orta 2–6, dış 4–9 cm/s. Önceki koşuda 63,5 h'te 7,1 m/s olan yerde şimdi 0,34 m/s.
 - Kullanıcı makinesinde tekrar: `31` (hgrid, 394 açık düğüm) → `33 --mode 2d --days 7` → `32 all --mode 2d` → WSL `mpirun -np 22`.
 
+- **7 günlük 2B koşu (kullanıcı makinesi, 22 çekirdek, 6–13 Eylül 2026): kararlı.** 336 kayıt; hız maks 0,40 m/s (42,5 h),
+  hiçbir adımda hız > 0,5 m/s düğümü yok, su seviyesi −0,15..+0,10 m, kuru düğüm 0. Medyan hız: iç körfez 0,7–3 cm/s,
+  orta 1–6, dış 3–7 cm/s; rüzgârın zayıfladığı 4.–6. günlerde tüm alan 1–4 cm/s'e iniyor (`plots/summary.txt`).
+  t=168 h iç körfez haritası: Yenikale boğazından doğuya doğru 5–10 cm/s giriş, iç körfez ortasında zayıf (<2 cm/s)
+  dağınık alan, Bostanlı–Karşıyaka önünde doğuya kıyı akıntısı, Bayraklı köşesinde küçük dönüş (`plots/ic_korfez_t335.png`).
+
 Sonraki: 7 günlük sonucu Sayın & Eronat desenleriyle karşılaştır; 3B (11 sigma) aynı hafta; `40_schism_to_opendrift.py`.
+
+## 3B kurulum (baroklinik, 11 sigma) — 20 Eylül 2026
+
+- `33 --mode 3d`: `ibc=0 ibtp=1`, `itur=3` (k-kl, KC), `itr_met=3 h_tvd=5` + `tvd.prop` (her elemanda 1), `flag_ic=2`
+  → `ts.ic` (CMEMS bölge-ortalaması dikey T/S profili; biçim: satır sayısı, sonra `no z T S`, z dipten yüzeye artan,
+  en üst +5 m tampon), `diffmin/diffmax/albedo/watertype.gr3`. `ihconsv=0`: ısı akısı kapalı — açmak için ERA5 `ssrd/strd`
+  indirip `sflux_rad_1.N.nc` yazmak gerekir (ilk 3B sürümde T sınırdan taşınır, yüzeyden ısınmaz; 1 haftalık koşuda kabul edilebilir).
+- `32 --mode 3d`: `TEM_3D/SAL_3D/uv3D.th.nc` (6 saatlik, sigma seviyelerine dikey interpolasyon; sınırda T 14,7–24,2 °C,
+  S 39,2–39,4), `ts.ic`, ayrıca `temp.ic/salt.ic` (flag_ic=1 yedeği).
+- vgrid: SZ, kz=1, h_c=20 m, theta_b=0,7, theta_f=3 → yüzeye doğru sıklaşan 10 katman.
+- Bulut duman testi (1 saat, gerçek veri, 1 çekirdek + 4 scribe): "Run completed successfully"; ~5 s/adım (2B'nin ~5 katı).
+  Yüzey hızı maks 0,08 m/s, dip ~0, NaN yok, su seviyesi ±1 cm. Giderilen hatalar: `tvd.prop` eksikti; `ts.ic` satırları
+  sıra numarası ister ("Bad integer for item 1"); 3B çıktı bayrakları `iof_hydro(18)/(19)` (T/S) — 14/15 rüzgârdı.
+- **Scribe sayısı:** 3B'de çıktı değişkeni başına bir scribe gerekir (horizontalVelX/Y, T, S, zCoordinates → 5; 6 verilir):
+  `mpirun -np <çekirdek+6> ~/schism/pschism 6`. 2B'de 2 yeter. Az verilirse "Too few scribes" ile durur.
+- Koşu klasörü ayrı: `--run izmir3d` (33 hgrid'i `izmir`den kopyalar); 2B sonuçları `izmir/` içinde kalır.
+- Tahmini süre (kullanıcı, 18 hesap çekirdeği): 7 gün 3B ≈ 30–45 dk.

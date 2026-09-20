@@ -57,6 +57,23 @@ def main():
     ax.quiver(x[s], y[s], u[T][s], v[T][s], scale=0.6, width=0.0025, color="k")
     ax.set_xlim(27.0, 27.18); ax.set_ylim(38.38, 38.48); ax.set_aspect(1 / COSLAT); ax.set_title(f"iç körfez derinlik-ort. akım, t={(T+1)*0.5:.1f} h")
     fig.savefig(out / f"ic_korfez_t{T:03d}.png", dpi=120, bbox_inches="tight")
+    # --- 3B ise: yüzey katmanı hız + T/S özeti
+    f3 = sorted(glob.glob(str(run / "outputs" / "horizontalVelX_*.nc")), key=lambda f: int(Path(f).stem.split("_")[1]))
+    if f3:
+        def top(var):
+            fs = sorted(glob.glob(str(run / "outputs" / f"{var}_*.nc")), key=lambda f: int(Path(f).stem.split("_")[1]))
+            return xr.concat([xr.open_dataset(f)[var].isel(nSCHISM_vgrid_layers=-1) for f in fs], dim="time").values
+        us, vs = top("horizontalVelX"), top("horizontalVelY"); ss = np.hypot(us, vs)
+        l3 = [f"3B yüzey hızı: maks {np.nanmax(ss[T]):.3f} m/s; medyan iç {np.nanmedian(ss[T][ic]):.4f} orta {np.nanmedian(ss[T][mid]):.4f} dış {np.nanmedian(ss[T][outer]):.4f} (t={(T+1)*0.5:.1f} h)"]
+        for var in ("temperature", "salinity"):
+            if glob.glob(str(run / "outputs" / f"{var}_*.nc")):
+                tv = top(var); l3.append(f"{var} yüzey (son): {np.nanmin(tv[T]):.2f}..{np.nanmax(tv[T]):.2f}, medyan {np.nanmedian(tv[T]):.2f}")
+        print("\n".join(l3)); (out / "summary.txt").open("a", encoding="utf-8").write("\n" + "\n".join(l3))
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.tripcolor(tri, ss[T], vmin=0, vmax=max(0.02, float(np.nanpercentile(ss[T][ic], 98))), cmap="Blues")
+        ax.quiver(x[s], y[s], us[T][s], vs[T][s], scale=0.6, width=0.0025, color="k")
+        ax.set_xlim(27.0, 27.18); ax.set_ylim(38.38, 38.48); ax.set_aspect(1 / COSLAT); ax.set_title(f"iç körfez YÜZEY akımı (3B), t={(T+1)*0.5:.1f} h")
+        fig.savefig(out / f"ic_korfez_yuzey_t{T:03d}.png", dpi=120, bbox_inches="tight")
     print("görseller:", out)
 
 if __name__ == "__main__":

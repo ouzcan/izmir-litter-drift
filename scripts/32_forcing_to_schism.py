@@ -229,7 +229,20 @@ def cmd_boundary(a):
     write_th(run / "TEM_3D.th.nc", T[:, :, :, None], dt_3)
     write_th(run / "SAL_3D.th.nc", Sa[:, :, :, None], dt_3)
     write_th(run / "uv3D.th.nc", np.stack([U, V], axis=-1), dt_3)
-    # --- başlangıç alanları: yüzey T/S, tüm düğümler (dikeyde tekdüze; ilk sürüm)
+    # --- başlangıç alanları: (a) ts.ic = CMEMS bölge-ortalaması dikey profil (flag_ic=2, önerilen — sınırla uyumlu
+    #     tabakalaşma); (b) temp.ic/salt.ic = yüzey alanı, dikeyde tekdüze (flag_ic=1, yedek)
+    prof = {}
+    for var in ("thetao", "so"):
+        da = open_cm(var).sel(time=slice(str(t0 - np.timedelta64(1, "D")), None)).isel(time=0)
+        prof[var] = da.mean(dim=("lat", "lon"), skipna=True).values
+        dep = da.depth.values
+    ok = np.isfinite(prof["thetao"]) & np.isfinite(prof["so"])
+    zz = -dep[ok][::-1]; Tp = prof["thetao"][ok][::-1]; Sp = prof["so"][ok][::-1]      # dipten yüzeye, z negatif artan
+    zbot = -(float(np.nanmax(xyz[:, 2])) + 50.0)
+    rows = [(zbot, Tp[0], Sp[0])] + list(zip(zz, Tp, Sp)) + [(5.0, Tp[-1], Sp[-1])]   # +5 m: su seviyesi > 0 için üst tampon
+    # SCHISM biçimi: ilk satır seviye sayısı; sonra "no z T S", z dipten yüzeye kesin artan
+    (run / "ts.ic").write_text(f"{len(rows)}\n" + "\n".join(f"{k+1} {z:.2f} {t:.4f} {sa:.4f}" for k, (z, t, sa) in enumerate(rows)) + "\n")
+    log(f"ts.ic: {len(rows)} seviye, yüzey T {Tp[-1]:.2f} °C / S {Sp[-1]:.2f}, dip ({-zz[0]:.0f} m) T {Tp[0]:.2f} / S {Sp[0]:.2f}")
     for var, name in [("thetao", "temp.ic"), ("so", "salt.ic")]:
         da = open_cm(var).sel(time=slice(str(t0 - np.timedelta64(1, "D")), None)).isel(time=0)
         top = da.isel(depth=0)

@@ -1,0 +1,10 @@
+kayıt 336 × 30 dk; dosya 14
+t=  0.5 h  elev -0.004..+0.008 m | hız maks 0.027; medyan iç 0.0008 orta 0.0013 dış 0.0012 m/s | n(hız>0.5)=0
+t= 21.5 h  elev -0.015..+0.044 m | hız maks 0.280; medyan iç 0.0166 orta 0.0357 dış 0.0428 m/s | n(hız>0.5)=0
+t= 42.5 h  elev -0.154..-0.065 m | hız maks 0.400; medyan iç 0.0285 orta 0.0618 dış 0.0641 m/s | n(hız>0.5)=0
+t= 63.5 h  elev -0.067..+0.023 m | hız maks 0.343; medyan iç 0.0244 orta 0.0613 dış 0.0697 m/s | n(hız>0.5)=0
+t= 84.5 h  elev +0.046..+0.095 m | hız maks 0.202; medyan iç 0.0112 orta 0.0313 dış 0.0401 m/s | n(hız>0.5)=0
+t=105.5 h  elev -0.028..+0.022 m | hız maks 0.144; medyan iç 0.0186 orta 0.0181 dış 0.0312 m/s | n(hız>0.5)=0
+t=126.5 h  elev -0.056..+0.014 m | hız maks 0.188; medyan iç 0.0092 orta 0.0151 dış 0.0337 m/s | n(hız>0.5)=0
+t=147.5 h  elev +0.051..+0.091 m | hız maks 0.272; medyan iç 0.0072 orta 0.0120 dış 0.0260 m/s | n(hız>0.5)=0
+kuru düğüm (son): 0

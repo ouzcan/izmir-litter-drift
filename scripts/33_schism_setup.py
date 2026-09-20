@@ -64,6 +64,11 @@ def write_bctides(out: Path, start: datetime, opens: list[int], mode: str):
             lines.append("1. !tobc"); lines.append("1. !sobc")
     (out / "bctides.in").write_text("\n".join(lines) + "\n")
 
+def write_const_prop(out: Path, name: str, ne: int, value):
+    """Eleman tabanlı .prop dosyası (tvd.prop vb.): 'eleman_no değer'."""
+    with open(out / name, "w") as fh:
+        fh.writelines(f"{i+1} {value}\n" for i in range(ne))
+
 def write_const_gr3(out: Path, name: str, hgrid: Path, value: float):
     lines = hgrid.read_text().splitlines()
     ne, nn = map(int, lines[1].split())
@@ -84,8 +89,16 @@ def main():
     ap.add_argument("--template", default=None, help="param.nml şablonu (varsayılan config/schism/param.nml.template)")
     a = ap.parse_args()
     out = RUNS / "schism" / a.run
+    out.mkdir(parents=True, exist_ok=True)
     hg = out / "hgrid.gr3"
-    if not hg.exists(): raise SystemExit("hgrid.gr3 yok — önce 31_mesh_to_schism.py")
+    if not hg.exists():
+        # ayrı bir koşu adı (örn. izmir3d) için ağı varsayılan koşudan kopyala
+        src = RUNS / "schism" / S.get("run_name", "izmir")
+        if (src / "hgrid.gr3").exists() and src != out:
+            for f in ("hgrid.gr3", "hgrid.ll"): shutil.copy(src / f, out / f)
+            log(f"hgrid.gr3/hgrid.ll {src.name} koşusundan kopyalandı")
+        else:
+            raise SystemExit("hgrid.gr3 yok — önce 31_mesh_to_schism.py")
     ne, nn, dep, opens = read_hgrid(hg)
     start = datetime.fromisoformat(a.start)
     days = a.days if a.days is not None else (0.25 if a.mode == "smoke" else 7)
@@ -105,11 +118,15 @@ def main():
               slam0=27.0, sfea0=38.5, thetai=0.6, dtb_max=30.0, dtb_min=10.0,
               ic_elev=0, flag_ic=1)
     if a.mode == "3d":
-        kv.update({"flag_ic(1)": 1, "flag_ic(2)": 1, "ihconsv": 1, "isconsv": 0, "iupwind_t": 1})
+        # ihconsv=1 (ısı akısı) sflux_rad_1.N.nc (kısa/uzun dalga) ister; ERA5 ssrd/strd indirilene kadar kapalı.
+        kv.update({"flag_ic(1)": 2, "flag_ic(2)": 2,   # ts.ic: dikey profil (32 yazar)
+                    "ihconsv": int(S.get("ihconsv3d", 0)), "isconsv": 0, "itr_met": 3, "h_tvd": 5.0})
     for k, v in kv.items(): t = set_param(t, k, v)
     # çıktılar: su seviyesi, derinlik ortalamalı hız, (3D) yatay hız, T, S
-    for k, v in {"iof_hydro(1)": 1, "iof_hydro(16)": 1, "iof_hydro(26)": 1 if a.mode == "3d" else 0,
-                 "iof_hydro(14)": 1 if a.mode == "3d" else 0, "iof_hydro(15)": 1 if a.mode == "3d" else 0}.items():
+    d3 = 1 if a.mode == "3d" else 0
+    for k, v in {"iof_hydro(1)": 1, "iof_hydro(16)": 1, "iof_hydro(14)": d3,           # elev, derinlik-ort. hız, rüzgâr (2B)
+                 "iof_hydro(26)": d3, "iof_hydro(18)": d3, "iof_hydro(19)": d3, "iof_hydro(25)": d3,  # 3B: yatay hız, T, S, z
+                 "iof_hydro(15)": 0}.items():
         t = set_param(t, k, v)
     (out / "param.nml").write_text(t)
     write_vgrid(out, nvrt)
@@ -120,9 +137,11 @@ def main():
     if a.mode == "3d":
         write_const_gr3(out, "diffmin.gr3", hg, 1e-6); write_const_gr3(out, "diffmax.gr3", hg, 1.0)
         write_const_gr3(out, "albedo.gr3", hg, 0.06); write_const_gr3(out, "watertype.gr3", hg, 1)
+        write_const_prop(out, "tvd.prop", ne, 1)     # itr_met=3: TVD her elemanda (h_tvd'den sığda kod zaten upwind kullanır)
     (out / "outputs").mkdir(exist_ok=True)
     log(f"{a.mode}: {nn} düğüm, {ne} eleman, açık sınır {opens}, nvrt={nvrt}, dt={a.dt}s, {days} gün, nspool={nspool}, ihfskip={ihfskip}")
-    log(f"koş: cd {out} && mpirun -np <N> <pschism> 1     (son sayı: scribe sayısı; N = hesap çekirdeği + 1)")
+    nscribe = 6 if a.mode == "3d" else 2   # scribe sayısı ≥ 3B çıktı değişkeni sayısı (+1): horizontalVelX/Y, T, S, zCoordinates
+    log(f"koş (WSL): cd {out} && rm -rf outputs/* && mpirun -np <hesap çekirdeği + {nscribe}> ~/schism/pschism {nscribe}")
 
 if __name__ == "__main__":
     main()
