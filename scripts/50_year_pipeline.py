@@ -104,12 +104,12 @@ def cmd_script(a):
     lines = ["#!/bin/bash", "# Yıllık SCHISM koşusu — WSL Ubuntu'da: bash runs/schism/run_year.sh   (yeniden başlatılabilir: biten aylar atlanır)",
              f"ROOT={root}", f"NP={NPROC + ns}", "PSCHISM=${PSCHISM:-$HOME/schism/pschism}", "PYW=${PYW:-$HOME/odenv/bin/python}",
              'if [ ! -x "$PYW" ]; then echo "WSL python ortamı yok: python3 -m venv ~/odenv && ~/odenv/bin/pip install numpy xarray netcdf4 pyyaml scipy dask"; exit 1; fi',
-             "cd $ROOT || exit 1", ""]
+             "# --oversubscribe: Open MPI slot sayısını fiziksel çekirdek sayar (24 iş parçacığı = 12 slot); WSL'de 21 süreç için gerekli", "cd $ROOT || exit 1", ""]
     for m in months():
         name, s0, nd, m0, m1 = seg(m)
         lines += [f"# ---- {name}: {s0} +{nd} gün",
                   f"if [ -f runs/schism/{name}/outputs/done ]; then echo '{name} tamam, atla'; else",
-                  f"  echo \"$(date +%H:%M) {name} başlıyor\"; cd runs/schism/{name} && rm -rf outputs/* && mpirun -np $NP $PSCHISM {ns} > run.log 2>&1; cd $ROOT",
+                  f"  echo \"$(date +%H:%M) {name} başlıyor\"; cd runs/schism/{name} && rm -rf outputs/* && mpirun --oversubscribe -np $NP $PSCHISM {ns} > run.log 2>&1; cd $ROOT",
                   f"  grep -q 'Run completed successfully' runs/schism/{name}/outputs/mirror.out || {{ echo '{name} HATA — run.log / outputs/fatal.error'; exit 1; }}",
                   f"  touch runs/schism/{name}/outputs/done",
                   f"  $PYW scripts/50_year_pipeline.py post --month {m[0]} || exit 1",
