@@ -1,4 +1,4 @@
-# DURUM — nerede kaldık (21 Eylül 2026, ~20:00)
+# DURUM — nerede kaldık (21 Eylül 2026, ~20:15)
 
 > Yeni oturuma başlarken önce bunu, sonra `docs/decisions.md` ve ilgili `docs/faz3-*.md` dosyalarını oku.
 > Doğrulama planı `docs/dogrulama.md`, kurum/veri talepleri `docs/kurumlar.md`.
@@ -25,14 +25,10 @@ Pages ayarı bekliyor; doğrulama planı çıkarıldı, henüz hiç doğrulama y
 - **`config/sources.csv` eksikleri**: S06 Çitlembik, S07 Irmak, S08 Kavaklıdere **koordinatsız** → koşuya girmiyor
   (29 noktanın 23'ü koşuyor). M03 Teos, M04 Alaçatı, F04 Dikili model alanı (26,3–27,2 / 38,3–38,9) dışında.
 
-## Bekleyen kararlar
-- **Alan dışı parçacık** (kullanıcı erteledi, yıl bitince): SCHISM kapsama dışında akıntı fallback ile 0'a düşüyor ama
-  ERA5 rüzgârı sürüyor → parçacık tek başına rüzgârla Sakız kıyısına "vuruyor". Hafta koşusundaki "%19 alan dışı"
-  rakamı bu artefakt. `drift:deactivate_west_of/_east_of/_north_of/_south_of` ile B_model sınırında dondur → tüm yılı
-  yeniden koş (gözcü hallediyor, bir gece).
-- **Duyarlılık varyantları**: hangileri koşulacak (windage 0,01/0,03, rüzgârsız, difüzyon 1/10, 2B) — kullanıcıya soruldu.
-- **Kaynak ağırlıklandırma**: 23 kaynak şu an eşit salıyor. Gerçek çöp yüküne göre ağırlıklandırılmadan "bölge payları"
-  kaynak listesinin şekline bağlı. Bkz. `docs/dogrulama.md` "Bilinen yanlılıklar".
+## Bekleyen kararlar (kullanıcı girdisi gerekiyor)
+- **Duyarlılık varyantları**: hangileri koşulacak — windage 0,01/0,03, rüzgârsız, difüzyon 1/10, 2B karşılaştırma.
+- **Drifter kampanyası**: yapılacak mı, kaç adet. Makalenin en güçlü argümanı ama izin + donanım en çok takılacak yer;
+  karar "makaleye engel değil, v2 ya da DEÜ tekne verirse paralel" yönünde (bkz. `docs/decisions.md` 21 Eylül).
 
 ## Zincir (betik sırası) — hepsi Windows conda `litter`, yalnız SCHISM WSL'de
 `20` batimetri (EMODnet) → `30` ağ (dfm_tools/meshkernel) → `31` hgrid.gr3 → `32 download` (CMEMS+ERA5) →
@@ -67,19 +63,38 @@ post/status) → `51` → `52` → `60 --year`. Ortak toplulaştırma: `scripts/
   Uzunada/adalar tuzak. Dosyalar: `docs/sonuclar/2026-09-06_hafta/`.
 - 2B vs 3B yüzey: yüzey akıntısı derinlik ortalamasının ~2 katı; Bostanlı→İnciraltı 25 h (2B) vs 15 h (3B yüzey).
 
-## Sıradaki adımlar (öncelik sırasıyla)
-1. Yıl bitince: `52` → `60 --year` → `web/data` güncelle, dönem seçicide yıl + 4 mevsim.
-2. Web yayını (push + Pages), `config.js` repo adresi, og:image.
-3. Alan dışı parçacık düzenlemesi + tüm yılın yeniden koşulması.
-4. Duyarlılık koşuları → her kıyı bölgesi payı için belirsizlik bandı.
-5. **Doğrulama Katman 1** (ücretsiz, hemen yapılabilir): Menteş mareografı (IOC API) → su seviyesi RMSE + gelgit
-   harmonikleri; LTBJ METAR (Iowa State) → ERA5 rüzgâr bias/RMSE; Copernicus SST UHR → yüzey sıcaklığı.
-   Ayrıntı ve adresler: `docs/dogrulama.md`.
-6. Kaynak koordinatları: S06–S08'i bul, `verified=no` olanları OSM'den doğrula; kaynakları çöp yüküne göre ağırlıklandır.
-7. Makale taslağı (`paper/` hâlâ boş): yöntem bölümü bu dosyadan + `docs/faz3-*.md`'den derlenir; şekiller
-   `docs/sonuclar` + `52` çıktıları. Sayın & Eronat karşılaştırma notu.
-8. Kurum temasları (`docs/kurumlar.md`): DEÜ-DBTE (ADCP/CTD + olası ortak yazarlık), İBB/İZSU, TÜRÇEV.
-   Sıralama önemli — önce önbaskı ve yayında site, sonra e-posta.
-9. Doğrulama Katman 2 (drifter) kararı: 3–5 adet GSM drifter + Liman Başkanlığı/SHOD izni. Makalenin en güçlü argümanı.
-10. İkinci sürüm: Stokes drift (WWM ya da rüzgârdan), ısı akısı (ERA5 radyasyon), alanı batıya (Sakız) genişletme,
-    il kıyısı için Copernicus hücreleri (web sitesi il geneli).
+## Sıradaki adımlar — 21 Eylül öncelik kararı
+> Tek cümle: **modeli büyütmeyi bırak, sınamaya başla.** Gerekçe `docs/decisions.md` 21 Eylül maddesi.
+> Ayrıntılı görev listesi: Claude dokümanı "Yapılacaklar" → "Öncelik" bölümü.
+
+**1 · Yıl biter bitmez (~1 saat)**
+1. `python scripts\52_seasonal_maps.py` → `python scripts\60_web_data.py --year`
+2. Siteyi yayına al: GitHub deposu (boş) + `git remote add origin …` + `git push -u origin main` +
+   Settings → Pages → Source "GitHub Actions". Site yan ürün değil — kurumlara yazarken elde gösterilecek şey.
+
+**2 · Bu hafta (2–3 gün)**
+3. **Kaynak ağırlıklandırma — en acil madde.** `od_agg.py` satır 71 bölge paylarını 23 kaynağın düz ortalaması
+   olarak alıyor (`tot = {z: np.mean([r[z] for r in rows])}`). `matrix.csv` kaynak bazında payları tuttuğu için
+   ağırlıklı ortalamaya çevirmek **post-processing; hiçbir koşu tekrarlanmıyor**. Ağırlık: Gediz → Kazancı vd. 2025,
+   dereler → İZSU debisi, iskele/marina → sefer/bağlama sayısı; yoksa açıkça beyan edilmiş varsayım.
+4. **Doğrulama Katman 1** (`docs/dogrulama.md`): Menteş mareografı (IOC API, ücretsiz, koşu dönemini kapsıyor) →
+   su seviyesi RMSE + gelgit harmonikleri; LTBJ METAR (Iowa State) → ERA5 rüzgâr bias/RMSE; Copernicus SST UHR →
+   yüzey sıcaklığı. İzin yok, para yok, kimseye bağımlı değil.
+
+**3 · Bir gece (gözcü koşar)**
+5. Alan-dışı parçacık düzeltmesi (`drift:deactivate_*`, B_model sınırı) + duyarlılık varyantları **tek geçişte** →
+   her kıyı bölgesi payı için belirsizlik bandı.
+
+**4 · Makale (iki hafta sonra yazılabilir)**
+6. `paper/` hâlâ boş. Yöntem bölümü bu dosyadan + `docs/faz3-*.md`'den derlenir; şekiller `docs/sonuclar` + `52`.
+   Çerçeve: drifter'sız "çöpün nereye gittiğini tahmin ediyoruz" denmez; "dolaşım + bağlanabilirlik modeli,
+   deniz seviyesi ve rüzgârla doğrulanmış, duyarlılık sınırlarıyla" denir. Literatür boşluğu: Politikos vd. (2017)
+   Ege çalışması Türk kıyısını kapsamıyor. Sayın & Eronat karşılaştırma notu.
+7. Kaynak koordinatları: S06–S08'i bul, `verified=no` olanları OSM'den doğrula.
+
+**5 · Paralel**
+8. Site yayına girer girmez DEÜ-DBTE e-postası (`docs/kurumlar.md`); sonra İBB/İZSU/TÜRÇEV.
+9. Drifter kararı verilirse Liman Başkanlığı + SHOD başvurusu.
+
+**Şimdi yapılmayacaklar** (doğru fikir, yanlış zaman): Stokes drift, ısı akısı, alanı batıya genişletme,
+il kıyısı için Copernicus hücreleri. Doğrulanmamış modele fizik eklemek hatanın kaynağını bulmayı zorlaştırıyor.

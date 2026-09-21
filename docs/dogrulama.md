@@ -112,7 +112,9 @@ hakem doğrudan "parçacık yolları doğru mu?" diye soracak.
 
 ## Bilinen yanlılıklar — doğrulamadan önce düzelt
 
-1. **Kaynak ağırlıklandırma yok.** 23 kaynağın hepsi eşit sayıda parçacık salıyor. Gerçek çöp yüküne göre ağırlıklandırılmalı
+1. **Kaynak ağırlıklandırma yok — en acil madde.** `od_agg.py` satır 71: `tot = {z: np.mean([r[z] for r in rows])}`,
+   yani bölge payları 23 kaynağın **düz ortalaması**. 23 kaynağın hepsi eşit sayıda parçacık salıyor.
+   `matrix.csv` kaynak bazında payları tuttuğu için düzeltme **saf post-processing — hiçbir koşu tekrarlanmıyor**. Gerçek çöp yüküne göre ağırlıklandırılmalı
    (Gediz için Kazancı vd. 2025 mikroplastik akısı, dereler için İZSU debileri). Aksi halde "bölge payları" kaynak
    listesinin şekline bağlı kalıyor, gerçek çöp dağılımına değil.
 2. **Alan dışı parçacık.** SCHISM kapsama dışında akıntı fallback ile 0'a düşüyor ama ERA5 rüzgârı devam ediyor →

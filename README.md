@@ -8,6 +8,9 @@ bir haftalık tam kaynak→kıyı matrisi çıktı; **yıllık koşunun (Eyl 202
 aylık OpenDrift partileri gözcü betiğiyle otomatik işleniyor; web sitesinin ilk sürümü `web/` altında (yayın bekliyor).
 Nerede kaldık: **`docs/DURUM.md`**. Karar kaydı: `docs/decisions.md`. Doğrulama planı: `docs/dogrulama.md`.
 
+**Öncelik (21 Eylül kararı):** modeli büyütmeyi bırak, sınamaya başla. Sıra: site yayını → kaynak ağırlıklandırma +
+doğrulama Katman 1 → alan-dışı düzeltmesi + duyarlılık → makale. Ertelenenler: Stokes drift, ısı akısı, alan genişletme.
+
 ## Yöntem (kısa)
 1. Batimetri EMODnet DTM 2024, kıyı GSHHS f → meshkernel ağı (76 bin düğüm; iç körfez ~110 m, dış ~430 m) → SCHISM `hgrid.gr3`.
 2. SCHISM 3B (11 sigma, k-kl): açık sınırda Copernicus MED (su seviyesi + gevşetmeli akıntı + T/S), yüzeyde ERA5 rüzgârı.
