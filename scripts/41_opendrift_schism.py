@@ -51,9 +51,23 @@ def prepare_wind(start: datetime, end: datetime) -> Path:
     PROC.mkdir(parents=True, exist_ok=True)
     out = PROC / f"era5_wind_od_{start:%Y%m%d}_{end:%Y%m%d}.nc"
     if out.exists():
+        # aynı süreçte önceki koşunun okuyucusu dosyayı açık tutabiliyor (Windows'ta üzerine yazmak
+        # PermissionError veriyor). Hazır dosya pencereyi kapsıyorsa yeniden yazma.
+        try:
+            with xr.open_dataset(out) as chk: t0c, t1c = chk["time"].values.min(), chk["time"].values.max()
+            if t0c <= ds["time"].values.min() and t1c >= ds["time"].values.max():
+                ds.close(); log(f"rüzgâr dosyası hazır, yeniden yazılmadı: {out.name}"); return out
+        except (OSError, KeyError, ValueError): pass
         try: out.unlink()
         except OSError: pass
-    ds.load().to_netcdf(out); ds.close(); return out
+    try:
+        ds.load().to_netcdf(out)
+    except PermissionError:
+        import os
+        out = PROC / f"era5_wind_od_{start:%Y%m%d}_{end:%Y%m%d}_{os.getpid()}.nc"
+        log(f"hedef dosya kilitli, yeni ada yazılıyor: {out.name}")
+        ds.load().to_netcdf(out)
+    ds.close(); return out
 
 from od_agg import zones, zone_of   # bölge ataması ortak modülde (kutular sırayla; adalar önce)
 
