@@ -1,29 +1,38 @@
-# DURUM — nerede kaldık (21 Eylül 2026, ~03:15)
+# DURUM — nerede kaldık (21 Eylül 2026, ~20:00)
 
 > Yeni oturuma başlarken önce bunu, sonra `docs/decisions.md` ve ilgili `docs/faz3-*.md` dosyalarını oku.
+> Doğrulama planı `docs/dogrulama.md`, kurum/veri talepleri `docs/kurumlar.md`.
 > Plan/görev listesi: Claude dokümanı "İzmir Yüzen Çöp Taşınımı — Çalışma Planı" (Yapılacaklar sekmesi).
 
 ## Tek cümle
 İzmir Körfezi için ~110 m'lik 3B SCHISM modeli + OpenDrift zinciri çalışıyor; bir haftalık (6–13 Eylül 2026) tam
-"kaynak → kıyı" matrisi çıktı; **yıllık koşunun 3 ayı bitti (Eyl–Kas 2025), Aralık sürüyor**; OpenDrift yıllık partileri
-için gözcü betiği hazır; web sitesinin ilk sürümü yazıldı, GitHub'a push + Pages ayarı bekliyor.
+"kaynak → kıyı" matrisi çıktı; **yıllık koşunun 8 ayı bitti (Eyl 2025 – Nis 2026), Mayıs sürüyor**; OpenDrift aylık
+partileri gözcü betiğiyle otomatik işleniyor (7 ay × 2 mod hazır); web sitesinin ilk sürümü yazıldı, GitHub'a push +
+Pages ayarı bekliyor; doğrulama planı çıkarıldı, henüz hiç doğrulama yapılmadı.
 
 ## Şu an çalışan / bekleyen şeyler
-- **SCHISM yıllık koşu** (WSL, `runs/schism/run_year.sh`, `nohup`): ay başına **3 sa 20 dk** (ölçüldü).
-  Biten: Eyl 2025 (16:13→19:33), Eki (→22:55), Kas (→02:11). Aralık 02:11'de başladı. Kalan 9 ay → **~22 Eylül 08:00**.
-  Durum: `tail -f runs/schism/run_year.log`. Kesilirse aynı komutla yeniden başlat; biten aylar atlanır. Bir ay "HATA"
-  verirse `runs/schism/<ay>/run.log` ve `outputs/fatal.error`; `python scripts\50_year_pipeline.py prepare --month YYYY-MM --force`.
-- **OpenDrift aylık partileri**: `scripts\watch_opendrift.bat` — 30 dk'da bir tarayıp hazır ayları koşar, bitenleri atlar.
-  Ay M'nin partisi ancak M+1'in yüzey dosyası varken koşulur (yoksa ay sonunda salınanlar takip edilemiyordu); bu yüzden
-  şu an Eyl + Eki koşulabilir, Kas Aralık bitince sıraya girer. Süre: sources ~30 dk/ay, grid ~2,5 sa/ay.
-- **Eyl 2025 sources partisi kesik**: Ekim yüzey dosyası yokken koştu (izleme 30 Eylül'de kesildi, `days: 29`).
-  `python scripts\51_year_opendrift.py --mode both --month 2025-09 --force` ile yenilenmeli (grid de o koşuda çıkar).
-- **Web sitesi**: `web/` hazır ve commit'li; depoda **uzak sunucu yok**, makinede `gh` de kurulu değil. Kullanıcı: GitHub'da
-  `izmir-litter-drift` deposu aç, `git remote add origin …`, `git push -u origin main`, Settings → Pages → Source
-  "GitHub Actions". `web/config.js` içindeki `repo` adresi kullanıcı adına göre doğrulanmalı (`oguzcanozupek` varsayıldı).
-- **`config/sources.csv` eksikleri**: S06 Çitlembik, S07 Irmak, S08 Kavaklıdere **koordinatsız** → hiçbir koşuya girmiyor
-  (23/29 nokta koşuyor). M03 Teos, M04 Alaçatı, F04 Dikili model alanı dışında kaldığı için düşüyor. Çoğu nokta
-  "doğrulanacak" işaretli.
+- **SCHISM yıllık koşu** (WSL, `runs/schism/run_year.sh`, `nohup`): **3 sa 20 dk/ay** (ölçüldü, çok kararlı).
+  Biten: Eyl–Ara 2025, Oca–Nis 2026. Mayıs 21 Eylül 18:52'de başladı. Kalan 4 ay → **22 Eylül ~08:10**.
+  Durum: `tail -f runs/schism/run_year.log`. Kesilirse aynı komutla başlat; biten aylar atlanır.
+- **OpenDrift gözcüsü** (`scripts/watch_opendrift.bat`): 30 dk'da bir tarar, yüzey dosyası hazır ayları koşar,
+  bitenleri atlar. Eyl 2025 – Mar 2026 arası 7 ay × 2 mod bitti. sources ~30–50 dk/ay, grid ~30 dk/ay.
+  Ay M ancak M+1'in yüzey dosyası varken koşulur (yoksa ay sonunda salınanlar takip edilemiyordu).
+- **Yıl bitince elle (2 komut, ~10 dk):** `python scripts\52_seasonal_maps.py` → `python scripts\60_web_data.py --year`.
+- **Web sitesi**: `web/` hazır ve commit'li; depoda **uzak sunucu yok**, makinede `gh` de kurulu değil, git'te
+  credential.helper ayarlı değil. Kullanıcı: GitHub'da `izmir-litter-drift` deposu aç (boş), `git remote add origin …`,
+  `git push -u origin main`, Settings → Pages → Source "GitHub Actions". `web/config.js` içindeki `repo` adresi
+  `oguzcanozupek` varsayıldı. `.env` `.gitignore`'da ve hiçbir commit'te yok — depo herkese açık olabilir (2,8 MB).
+- **`config/sources.csv` eksikleri**: S06 Çitlembik, S07 Irmak, S08 Kavaklıdere **koordinatsız** → koşuya girmiyor
+  (29 noktanın 23'ü koşuyor). M03 Teos, M04 Alaçatı, F04 Dikili model alanı (26,3–27,2 / 38,3–38,9) dışında.
+
+## Bekleyen kararlar
+- **Alan dışı parçacık** (kullanıcı erteledi, yıl bitince): SCHISM kapsama dışında akıntı fallback ile 0'a düşüyor ama
+  ERA5 rüzgârı sürüyor → parçacık tek başına rüzgârla Sakız kıyısına "vuruyor". Hafta koşusundaki "%19 alan dışı"
+  rakamı bu artefakt. `drift:deactivate_west_of/_east_of/_north_of/_south_of` ile B_model sınırında dondur → tüm yılı
+  yeniden koş (gözcü hallediyor, bir gece).
+- **Duyarlılık varyantları**: hangileri koşulacak (windage 0,01/0,03, rüzgârsız, difüzyon 1/10, 2B) — kullanıcıya soruldu.
+- **Kaynak ağırlıklandırma**: 23 kaynak şu an eşit salıyor. Gerçek çöp yüküne göre ağırlıklandırılmadan "bölge payları"
+  kaynak listesinin şekline bağlı. Bkz. `docs/dogrulama.md` "Bilinen yanlılıklar".
 
 ## Zincir (betik sırası) — hepsi Windows conda `litter`, yalnız SCHISM WSL'de
 `20` batimetri (EMODnet) → `30` ağ (dfm_tools/meshkernel) → `31` hgrid.gr3 → `32 download` (CMEMS+ERA5) →
@@ -59,10 +68,18 @@ post/status) → `51` → `52` → `60 --year`. Ortak toplulaştırma: `scripts/
 - 2B vs 3B yüzey: yüzey akıntısı derinlik ortalamasının ~2 katı; Bostanlı→İnciraltı 25 h (2B) vs 15 h (3B yüzey).
 
 ## Sıradaki adımlar (öncelik sırasıyla)
-1. Yıl koşusu bitince: `51 --mode both` (tüm aylar) → `52` → `60 --year` → `web/data` güncelle, dönem seçicide yıl+mevsimler.
+1. Yıl bitince: `52` → `60 --year` → `web/data` güncelle, dönem seçicide yıl + 4 mevsim.
 2. Web yayını (push + Pages), `config.js` repo adresi, og:image.
-3. Duyarlılık: `51 --windage 0.01/0.03 --tag …`, `--no-wind`, difüzyon 1/10; 2B yıl karşılaştırması (5 saat).
-4. Sayın & Eronat (2003/2006) dolaşım karşılaştırma notu; kaynak koordinatlarını doğrula (`sources.csv`, S06–S08 eksik).
-5. Makale taslağı (`paper/`): yöntem bölümü bu dosyadaki notlardan; şekiller `docs/sonuclar` + `52` çıktıları.
-6. İkinci sürüm: Stokes drift (WWM ya da rüzgârdan), ısı akısı (ERA5 radyasyon), alanı batıya (Sakız) genişletme, il kıyısı
-   için Copernicus hücreleri (web sitesi il geneli).
+3. Alan dışı parçacık düzenlemesi + tüm yılın yeniden koşulması.
+4. Duyarlılık koşuları → her kıyı bölgesi payı için belirsizlik bandı.
+5. **Doğrulama Katman 1** (ücretsiz, hemen yapılabilir): Menteş mareografı (IOC API) → su seviyesi RMSE + gelgit
+   harmonikleri; LTBJ METAR (Iowa State) → ERA5 rüzgâr bias/RMSE; Copernicus SST UHR → yüzey sıcaklığı.
+   Ayrıntı ve adresler: `docs/dogrulama.md`.
+6. Kaynak koordinatları: S06–S08'i bul, `verified=no` olanları OSM'den doğrula; kaynakları çöp yüküne göre ağırlıklandır.
+7. Makale taslağı (`paper/` hâlâ boş): yöntem bölümü bu dosyadan + `docs/faz3-*.md`'den derlenir; şekiller
+   `docs/sonuclar` + `52` çıktıları. Sayın & Eronat karşılaştırma notu.
+8. Kurum temasları (`docs/kurumlar.md`): DEÜ-DBTE (ADCP/CTD + olası ortak yazarlık), İBB/İZSU, TÜRÇEV.
+   Sıralama önemli — önce önbaskı ve yayında site, sonra e-posta.
+9. Doğrulama Katman 2 (drifter) kararı: 3–5 adet GSM drifter + Liman Başkanlığı/SHOD izni. Makalenin en güçlü argümanı.
+10. İkinci sürüm: Stokes drift (WWM ya da rüzgârdan), ısı akısı (ERA5 radyasyon), alanı batıya (Sakız) genişletme,
+    il kıyısı için Copernicus hücreleri (web sitesi il geneli).
