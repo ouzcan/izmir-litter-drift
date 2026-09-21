@@ -1,25 +1,29 @@
-# DURUM — nerede kaldık (20 Eylül 2026, ~20:00)
+# DURUM — nerede kaldık (21 Eylül 2026, ~03:15)
 
 > Yeni oturuma başlarken önce bunu, sonra `docs/decisions.md` ve ilgili `docs/faz3-*.md` dosyalarını oku.
 > Plan/görev listesi: Claude dokümanı "İzmir Yüzen Çöp Taşınımı — Çalışma Planı" (Yapılacaklar sekmesi).
 
 ## Tek cümle
 İzmir Körfezi için ~110 m'lik 3B SCHISM modeli + OpenDrift zinciri çalışıyor; bir haftalık (6–13 Eylül 2026) tam
-"kaynak → kıyı" matrisi çıktı; **yıllık koşu (Eyl 2025–Ağu 2026) kullanıcının makinesinde sürüyor**; web sitesinin ilk
-sürümü yazıldı, GitHub'a push + Pages ayarı bekliyor.
+"kaynak → kıyı" matrisi çıktı; **yıllık koşunun 3 ayı bitti (Eyl–Kas 2025), Aralık sürüyor**; OpenDrift yıllık partileri
+için gözcü betiği hazır; web sitesinin ilk sürümü yazıldı, GitHub'a push + Pages ayarı bekliyor.
 
 ## Şu an çalışan / bekleyen şeyler
-- **SCHISM yıllık koşu** (WSL, `runs/schism/run_year.sh`, `nohup`, 20 Eyl 16:13'te başladı): ay başına ~3 sa 20 dk;
-  Eylül 2025 bitti (`data/processed/schism_surface_2025-09.nc`, 562 MB), Ekim 19:33'te başladı → yıl ~21 Eyl akşamı biter.
-  Durum: `python scripts\50_year_pipeline.py status` (Windows) ya da `tail -1 runs/schism/y2025-10/outputs/mirror.out` (WSL).
-  Kesilirse aynı komutla yeniden başlat; biten aylar atlanır. Bir ay "HATA" verirse `runs/schism/<ay>/run.log` ve
-  `outputs/fatal.error`'a bak; `python scripts\50_year_pipeline.py prepare --month YYYY-MM --force` ile yeniden hazırlanabilir.
-- **OpenDrift aylık partiler**: `python scripts\51_year_opendrift.py --mode both` — hazır yüzey dosyası olan ayları koşar,
-  bitenleri atlar. `runs/opendrift/year/sources_2025-09/` klasörü açılmış ama `summary.txt` yok → ya sürüyordu ya yarım kaldı;
-  `--force` ile tekrar koş. Yıl bitince `52_seasonal_maps.py` ve `60_web_data.py --year`.
-- **Web sitesi**: `web/` hazır ve commit'li; depoda **uzak sunucu yok**. Kullanıcı: GitHub'da `izmir-litter-drift` deposu aç,
-  `git remote add origin …`, `git push -u origin main`, Settings → Pages → Source "GitHub Actions". `web/config.js` içindeki
-  `repo` adresi kullanıcı adına göre düzeltilmeli (`oguzcanozupek` varsayıldı).
+- **SCHISM yıllık koşu** (WSL, `runs/schism/run_year.sh`, `nohup`): ay başına **3 sa 20 dk** (ölçüldü).
+  Biten: Eyl 2025 (16:13→19:33), Eki (→22:55), Kas (→02:11). Aralık 02:11'de başladı. Kalan 9 ay → **~22 Eylül 08:00**.
+  Durum: `tail -f runs/schism/run_year.log`. Kesilirse aynı komutla yeniden başlat; biten aylar atlanır. Bir ay "HATA"
+  verirse `runs/schism/<ay>/run.log` ve `outputs/fatal.error`; `python scripts\50_year_pipeline.py prepare --month YYYY-MM --force`.
+- **OpenDrift aylık partileri**: `scripts\watch_opendrift.bat` — 30 dk'da bir tarayıp hazır ayları koşar, bitenleri atlar.
+  Ay M'nin partisi ancak M+1'in yüzey dosyası varken koşulur (yoksa ay sonunda salınanlar takip edilemiyordu); bu yüzden
+  şu an Eyl + Eki koşulabilir, Kas Aralık bitince sıraya girer. Süre: sources ~30 dk/ay, grid ~2,5 sa/ay.
+- **Eyl 2025 sources partisi kesik**: Ekim yüzey dosyası yokken koştu (izleme 30 Eylül'de kesildi, `days: 29`).
+  `python scripts\51_year_opendrift.py --mode both --month 2025-09 --force` ile yenilenmeli (grid de o koşuda çıkar).
+- **Web sitesi**: `web/` hazır ve commit'li; depoda **uzak sunucu yok**, makinede `gh` de kurulu değil. Kullanıcı: GitHub'da
+  `izmir-litter-drift` deposu aç, `git remote add origin …`, `git push -u origin main`, Settings → Pages → Source
+  "GitHub Actions". `web/config.js` içindeki `repo` adresi kullanıcı adına göre doğrulanmalı (`oguzcanozupek` varsayıldı).
+- **`config/sources.csv` eksikleri**: S06 Çitlembik, S07 Irmak, S08 Kavaklıdere **koordinatsız** → hiçbir koşuya girmiyor
+  (23/29 nokta koşuyor). M03 Teos, M04 Alaçatı, F04 Dikili model alanı dışında kaldığı için düşüyor. Çoğu nokta
+  "doğrulanacak" işaretli.
 
 ## Zincir (betik sırası) — hepsi Windows conda `litter`, yalnız SCHISM WSL'de
 `20` batimetri (EMODnet) → `30` ağ (dfm_tools/meshkernel) → `31` hgrid.gr3 → `32 download` (CMEMS+ERA5) →
@@ -40,6 +44,8 @@ post/status) → `51` → `52` → `60 --year`. Ortak toplulaştırma: `scripts/
   Okuyucu Delaunay + dışbükey zarf; kıyıya vurma GSHHS f maskesiyle. ERA5 CDS dosyası `valid_time`, standard_name `unknown` →
   `prepare_wind` dönüştürür. CDS isteği ay ay yapılır (çok aylı istek çarpım yüzünden şişer).
 - Windows'ta `--run izmir3d.` (sondaki nokta) klasör adına yansımaz ama plots yolu tuhaf görünür; zararsız.
+- `51` grid modu: `np.arange(0, (t1-t0).days, 7)` int64 üretiyordu, `timedelta(days=…)` reddediyor (sources modunda
+  stop float olduğu için görünmemişti) → her iki satırda `float()`. Düzeltme 85bd610.
 - Git: `.git/*.lock` dosyaları bağlı klasörde kalabiliyor → commit sonrası `rm -f .git/index.lock …`. Commit kimliği
   `-c user.name="Oguzcan" -c user.email="oguzcanozupek@gmail.com"`.
 - Supabase `izmir-litter` (znpsohjjeorqhxjyuiqn, eu-central-1): `throws` (RLS anon okur+ekler), görünümler, realtime,
