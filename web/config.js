@@ -5,5 +5,5 @@ window.APP_CONFIG = {
   mapStyle: "https://tiles.openfreemap.org/styles/positron",
   dataBase: "data/",
   maxThrowsShown: 4000,
-  repo: "https://github.com/oguzcanozupek/izmir-litter-drift"
+  repo: "https://github.com/ouzcan/izmir-litter-drift"
 };

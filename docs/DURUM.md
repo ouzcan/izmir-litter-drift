@@ -24,7 +24,7 @@ doğrulama planı çıkarıldı ama **henüz hiç doğrulama yapılmadı** — s
   Oca 24 sa, Mar 18 sa, Haz 21 sa. Kış ayrışıyor: çöp daha uzun suda kalıyor, daha büyük kısmı körfezi terk ediyor.
 - **Web sitesi**: yayına hazır. Kullanıcı: GitHub'da `izmir-litter-drift` deposu aç (boş), `git remote add origin …`,
   `git push -u origin main`, Settings → Pages → Source "GitHub Actions". `web/config.js` `repo` adresi
-  `oguzcanozupek` varsayıldı. `.env` `.gitignore`'da ve hiçbir commit'te yok. Depo 6,8 MB.
+  `ouzcan` (doğrulandı, 22 Eylül). `.env` `.gitignore`'da ve hiçbir commit'te yok. Depo 6,8 MB.
 - **`config/sources.csv` eksikleri**: S06 Çitlembik, S07 Irmak, S08 Kavaklıdere koordinatsız (29 noktanın 23'ü koşuyor).
   M03 Teos, M04 Alaçatı, F04 Dikili model alanı dışında.
 
