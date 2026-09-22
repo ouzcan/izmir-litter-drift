@@ -69,7 +69,7 @@ def aggregate(out: Path, origins: list[dict], endpoints: dict, meta: dict):
     lines = [hdr, (f"kıyıya vuran toplam: %{100*stranded.mean():.0f}; medyan vurma süresi {np.median((t_end-t_rel)[stranded]):.1f} h"
                    if stranded.any() else "kıyıya vuran yok"), ""]
     tot = {z: float(np.mean([float(r[z]) for r in rows])) for z in zids}
-    lines.append("bölge payları (tüm salım noktaları ort.): " + ", ".join(f"{z} %{100*tot[z]:.0f}" for z in zids if tot[z] >= 0.005))
+    lines.append("bölge payları (salım noktalarının DÜZ ortalaması — kaynak yükü ağırlıklı için 53_weighted_shares.py): " + ", ".join(f"{z} %{100*tot[z]:.0f}" for z in zids if tot[z] >= 0.005))
     if meta.get("mode") == "sources":
         lines += ["", f"{'kaynak':6s} {'ad':28s} {'vuran':>6s} {'süre':>6s}  baskın bölge"]
         for r in rows: lines.append(f"{r['origin']:6s} {r['name'][:28]:28s} {100*float(r['stranded_frac']):5.0f}% {r['t_strand_med_h']:>6s}  {r['dominant']} {zn.get(r['dominant'],'')} %{100*float(r['dominant_frac']):.0f}")

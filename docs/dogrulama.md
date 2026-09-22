@@ -112,9 +112,13 @@ hakem doğrudan "parçacık yolları doğru mu?" diye soracak.
 
 ## Bilinen yanlılıklar — doğrulamadan önce düzelt
 
-1. **Kaynak ağırlıklandırma yok — en acil madde.** `od_agg.py` satır 71: `tot = {z: np.mean([r[z] for r in rows])}`,
-   yani bölge payları 23 kaynağın **düz ortalaması**. 23 kaynağın hepsi eşit sayıda parçacık salıyor.
-   `matrix.csv` kaynak bazında payları tuttuğu için düzeltme **saf post-processing — hiçbir koşu tekrarlanmıyor**. Gerçek çöp yüküne göre ağırlıklandırılmalı
+1. ~~**Kaynak ağırlıklandırma yok**~~ — **çözüldü (22 Eylül)**: `config/source_weights.csv` + `scripts/53_weighted_shares.py`.
+   Üç senaryo (`esit` / `havza` / `kentsel`), grup payları UNEP/MAP 2015 ve İzmir 2024 kompozisyonundan türetildi,
+   Gediz Kazancı vd. 2025 ile çapalandı. Post-processing, koşu tekrarı yok. **Sonuç manşeti değiştiriyor**:
+   yıllık bazda iç körfez payı (Z02+Z04) eşit ağırlıkta %50, havza ağırlıklı senaryoda %11; tepeye Foça–Gediz
+   deltası çıkıyor (%6,6 → %29,5). Makalede tek sayı yerine senaryo aralığı raporlanacak.
+   Kalan eksik: dere bazında ölçülmüş yük. İZSU'nun dere ağzı bariyerlerinden topladığı yıllık katı atık
+   (toplam 604 t/yıl yayımlanmış, kırılımı kurumda) bu belirsizliği tek başına kapatır — bkz. `docs/kurumlar.md`. Gerçek çöp yüküne göre ağırlıklandırılmalı
    (Gediz için Kazancı vd. 2025 mikroplastik akısı, dereler için İZSU debileri). Aksi halde "bölge payları" kaynak
    listesinin şekline bağlı kalıyor, gerçek çöp dağılımına değil.
 2. **Alan dışı parçacık.** SCHISM kapsama dışında akıntı fallback ile 0'a düşüyor ama ERA5 rüzgârı devam ediyor →

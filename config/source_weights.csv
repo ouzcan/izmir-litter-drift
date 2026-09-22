@@ -1,0 +1,33 @@
+# Kaynak ağırlıkları — bölge paylarını kaynak başına çöp yüküyle orantılamak için.
+# Tek bir "doğru" ağırlıklandırma yok: üç senaryo koşulur, sonuç yayılımı raporlanır.
+#   esit    : tüm kaynaklar eşit (eski davranış; yalnız karşılaştırma tabanı)
+#   havza   : dereler havza alanıyla, diğerleri faaliyet proxy'siyle orantılı
+#   kentsel : dereler havza alanı x kentsel pay ile (Meijer vd. 2021 mantığı), diğerleri aynı
+# Grup payları (UNEP/MAP 2015: kara kaynaklı <=%69, deniz kaynaklı <=%26;
+#   İzmir Körfezi 2024 kompozisyonunda balıkçılık ekipmanı %1,5):
+#   dere 0.69 | iskele 0.12 | marina 0.03 | liman 0.14 | barinak 0.02
+# guven: olculmus = yayimlanmis sayi, tahmin = turetilmis, varsayim = veri yok
+id,grup,birim,havza_km2,kentsel_pay,faaliyet,guven,kaynak
+S01,dere,havza,15123,0.10,,olculmus,"DSİ 2. Bölge: Gediz havzası 15.123 km², 1,70 km³/yıl (~54 m³/s). Kentsel pay tahmin — havza ağırlıklı kırsal/tarımsal. Kazancı vd. 2025 (J. Environ. Manage. 391:126412): ağızda ~430.000 mikroplastik parçacık/s"
+S02,dere,havza,127,0.95,,olculmus,"İBB Meles raporu: havza ~127 km², tamamen kentsel. DÇEP: Bornova/Karabağlar/Konak sanayi sitelerinden"
+S03,dere,havza,20,0.90,,varsayim,"Manda Çayı (Bornova) — havza verisi açık kaynakta yok; iç körfez kent deresi varsayılan 20 km²"
+S04,dere,havza,20,0.90,,varsayim,"Arap Deresi — DÇEP'te ayrı kaynak ama İBB raporuna göre Meles'in kolu olabilir; ağız konumu doğrulanmalı"
+S05,dere,havza,20,0.90,,varsayim,"Laka Deresi — veri yok, kent deresi varsayılanı"
+S09,dere,havza,20,0.90,,varsayim,"Bostanlı Deresi — veri yok; İBB bariyer/ızgara noktası"
+S10,dere,havza,20,0.90,,varsayim,"Poligon Deresi — veri yok"
+S11,dere,havza,20,0.90,,varsayim,"Balçova Deresi — veri yok"
+S12,dere,havza,20,0.70,,varsayim,"Ilıca Deresi (Narlıdere) — veri yok; kısmen kırsal"
+P01,liman,ton,,,9040779,olculmus,"Alsancak Limanı 2018: 9.040.779 ton, 610.908 TEU, 2.047 gemi"
+I01,liman,ton,,,85454864,olculmus,"Aliağa–Nemrut bölgesi 2024: 85.454.864 net ton, 2.119.221 TEU, 6.086 gemi (Türkiye 1.)"
+P02,iskele,yolcu,,,1,varsayim,"İZDENİZ ~16 M yolcu/yıl (2018 rekoru) — iskele bazında kırılım yayımlanmamış, iç körfez iskeleleri eşit"
+P03,iskele,yolcu,,,1,varsayim,"aynı"
+P04,iskele,yolcu,,,1,varsayim,"aynı"
+P05,iskele,yolcu,,,1,varsayim,"aynı"
+P06,iskele,yolcu,,,1,varsayim,"aynı"
+P07,iskele,yolcu,,,1,varsayim,"aynı"
+M01,marina,baglama,,,65,olculmus,"Levent Marina (Mavişehir): 65 tekne <=25 m"
+M02,marina,baglama,,,186,olculmus,"Setur Çeşme: 186 denizde + 60 karada, max 45 m"
+F01,barinak,tekne,,,1,varsayim,"Foça (Eski ~150 + Yeni ~75 tekne) — barınak bazında çöp verisi yok, eşit kabul"
+F02,barinak,tekne,,,1,varsayim,"Urla İskele — veri yok"
+F03,barinak,tekne,,,1,varsayim,"Güzelbahçe — veri yok"
+F05,barinak,tekne,,,1,varsayim,"Karaburun/Mordoğan — veri yok"
