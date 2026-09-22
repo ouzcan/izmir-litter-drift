@@ -2,7 +2,7 @@
 
 Statik tek sayfa (MapLibre GL + sade JS) + Supabase (herkesin çöpleri, canlı akış).
 
-- `data/` — `scripts/60_web_data.py` üretir: `cells.json` (1 km hücre → dönem → kıyı payları, örnek varış noktaları),
+- `data/` — `scripts/60_web_data.py` üretir: `cells_<dönem>.json` (1 km hücre → kıyı payları, örnek varış noktaları; dönem başına ayrı dosya, açılışta yalnız biri iner),
   `sources.json`, `zones.json`, `coast.geojson` (model ağının kıyısı), `meta.json` (dönemler).
 - `config.js` — Supabase URL + publishable anahtar (herkese açık; RLS koruyor), harita stili, depo adresi.
 - `vendor/` — maplibre-gl 4.7.1, supabase-js 2 (UMD). CDN'siz çalışır; harita zemini openfreemap.org'dan gelir, ulaşılamazsa

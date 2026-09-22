@@ -17,7 +17,7 @@
 - `web/`: `index.html`, `style.css`, `app.js` (bağımlılık: `vendor/` maplibre-gl 4.7.1 + supabase-js 2 UMD — CDN'siz),
   `config.js` (Supabase URL + publishable anahtar; herkese açık, RLS koruyor), `data/` (60 üretir).
 - Harita zemini: OpenFreeMap positron (ücretsiz, anahtar yok). Ulaşılamazsa yalın zemin + `coast.geojson` (model ağının kıyısı).
-- `scripts/60_web_data.py`: 42/51 koşularından `cells.json` (hücre → dönem → {p: bölge payları, t: medyan saat, s: kıyıya vurma
+- `scripts/60_web_data.py`: 42/51 koşularından `cells_<dönem>.json` (dönem başına ayrı dosya; hücre → {p: bölge payları, t: medyan saat, s: kıyıya vurma
   oranı, e: 8 örnek varış noktası}), `sources.json`, `zones.json`, `meta.json`. Yıllık: `60 --year`.
 - Supabase: `throws` tablosu (RLS: anon okur+ekler, güncelleme/silme yok; koordinat/tür kısıtları; cihaz başına 10 dk'da 40 kayıt
   tetikleyicisi, fonksiyon API'den çağrılamaz), görünümler `throw_stats`, `zone_totals`, `item_totals`, `daily_totals`

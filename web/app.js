@@ -26,7 +26,9 @@ const I18N = {
     st_total: "atılan çöp", st_24h: "son 24 saat", st_mine: "senin attıkların", top_zones: "En çok çöp biriken kıyılar", live: "Canlı akış",
     foot: "Model: SCHISM (3B, ~110 m) + OpenDrift; rüzgâr ERA5. Bilimsel bir çalışmanın ön sürümüdür; seçili dönemin hava koşullarını yansıtır.",
     method: "Yöntem", data: "Veri", ly_cells: "Varış haritası (hücre → baskın kıyı)", ly_throws: "Herkesin çöpleri", ly_heat: "Yoğunluk (ısı haritası)", ly_sources: "Bilinen kaynaklar (dere ağızları, limanlar)",
-    land: "Burası kara ya da model alanı dışında — denizde bir noktaya tıkla.", stranded: "kıyıya vurdu", atsea: "denizde kaldı / alan dışına çıktı",
+    land: "Burası kara — denizde bir noktaya tıkla.",
+    outside: "Burası model alanının dışında (haritadaki kesik çizgi). Model İzmir Körfezi ve yakın il kıyısını kapsıyor; güney kıyı (Sığacık, Pamucak) bu sürümde yok.",
+    loading: "Dönem verisi yükleniyor…", stranded: "kıyıya vurdu", atsea: "denizde kaldı / alan dışına çıktı",
     hours: "saat", median: "medyan", where: "Nereye vurur?", pick: "Ne atıyorsun?", drifting: "sürükleniyor…", landed_in: "sonra kıyıya vurdu",
     fact1: (z, p, t) => `Buradan atılan çöplerin <b>%${p}</b>'i <b>${z}</b> kıyısına vuruyor; tipik yolculuk <b>${t} saat</b>.`,
     fact2: (p) => `Buradan atılanların <b>%${p}</b>'i körfezden çıkıp açık Ege'ye gidiyor.`,
@@ -37,7 +39,9 @@ const I18N = {
     st_total: "items thrown", st_24h: "last 24 h", st_mine: "yours", top_zones: "Coasts collecting the most litter", live: "Live feed",
     foot: "Model: SCHISM (3D, ~110 m) + OpenDrift; ERA5 wind. Preview of a scientific study; reflects the weather of the selected period.",
     method: "Method", data: "Data", ly_cells: "Arrival map (cell → dominant coast)", ly_throws: "Everyone's litter", ly_heat: "Density (heatmap)", ly_sources: "Known sources (river mouths, ports)",
-    land: "That is land or outside the model area — click a point at sea.", stranded: "beached", atsea: "stayed at sea / left the area",
+    land: "That is land — click a point at sea.",
+    outside: "Outside the model area (dashed line on the map). The model covers İzmir Bay and the nearby provincial coast; the southern coast (Sığacık, Pamucak) is not in this version.",
+    loading: "Loading period data…", stranded: "beached", atsea: "stayed at sea / left the area",
     hours: "h", median: "median", where: "Where does it end up?", pick: "What are you throwing?", drifting: "drifting…", landed_in: "later it beached",
     fact1: (z, p, t) => `<b>${p}%</b> of litter thrown here beaches on <b>${z}</b>; typical journey <b>${t} hours</b>.`,
     fact2: (p) => `<b>${p}%</b> of litter thrown here leaves the bay for the open Aegean.`,
@@ -46,7 +50,8 @@ const I18N = {
 };
 
 const state = { lang: localStorage.getItem("lang") || (navigator.language?.startsWith("tr") ? "tr" : "en"), period: null, item: "pet",
-  meta: null, zones: {}, cells: [], sources: [], throws: [], mine: 0, device: deviceId(), busy: false, sb: null, online: true };
+  meta: null, zones: {}, zonesOutside: new Set(), cells: [], cellById: {}, loaded: new Set(),
+  sources: [], throws: [], mine: 0, device: deviceId(), busy: false, sb: null, online: true };
 const t = (k, ...a) => { const v = I18N[state.lang][k]; return typeof v === "function" ? v(...a) : v; };
 const zoneName = (z) => (state.lang === "en" ? ZONE_EN[z] : state.zones[z]) || z;
 
@@ -66,16 +71,45 @@ function applyLang() {
 // ---------- veri
 async function loadData() {
   const j = async (f) => (await fetch(CFG.dataBase + f, { cache: "no-cache" })).json();
-  const [meta, zones, cells, sources] = await Promise.all([j("meta.json"), j("zones.json"), j("cells.json"), j("sources.json")]);
-  state.meta = meta; state.cells = cells.features; state.sources = sources.features;
-  zones.zones.forEach((z) => (state.zones[z.id] = z.name));
+  const [meta, zones, sources] = await Promise.all([j("meta.json"), j("zones.json"), j("sources.json")]);
+  state.meta = meta; state.sources = sources.features;
+  zones.zones.forEach((z) => { state.zones[z.id] = z.name; if (z.outside) state.zonesOutside.add(z.id); });
   const url = new URL(location.href);
   state.period = meta.periods.find((p) => p.id === url.searchParams.get("p"))?.id || meta.default_period;
   const sel = $("#period"); sel.innerHTML = "";
   meta.periods.forEach((p) => { const o = document.createElement("option"); o.value = p.id; o.textContent = p.label; sel.appendChild(o); });
-  sel.value = state.period; sel.onchange = () => { state.period = sel.value; refreshCells(); };
+  sel.value = state.period;
+  sel.onchange = async () => {
+    const per = sel.value; if (per === state.period) return;
+    sel.disabled = true;
+    try { if (!state.loaded.has(per)) toast(t("loading"), 1500); await loadPeriod(per); state.period = per; refreshCells(); renderLegend(); updateDataLink(); }
+    catch (err) { console.error(err); toast(t("err"), 4000); sel.value = state.period; }
+    finally { sel.disabled = false; }
+  };
+  await loadPeriod(state.period);
   try { state.coast = await j("coast.geojson"); } catch { state.coast = null; }
 }
+// Hücre verisi dönem başına ayrı dosyada (cells_<dönem>.json); yalnız gösterilen dönem indirilir.
+// Tek parça hâlinde 17 dönem 12 MB tutuyordu ve harita çizilmeden önce tamamı iniyordu.
+async function loadPeriod(per) {
+  if (state.loaded.has(per)) return;
+  const r = await fetch(CFG.dataBase + `cells_${per}.json`, { cache: "no-cache" });
+  if (!r.ok) throw new Error(`cells_${per}.json (${r.status})`);
+  const fc = await r.json();
+  for (const f of fc.features) {
+    let c = state.cellById[f.id];
+    if (!c) { c = { id: f.id, lon: f.lon, lat: f.lat, d: {} }; state.cellById[f.id] = c; state.cells.push(c); }
+    c.d[per] = f.r;
+  }
+  state.loaded.add(per);
+}
+function updateDataLink() {
+  const href = CFG.dataBase + `cells_${state.period}.json`;
+  const a = $("#link-data"); if (a) a.href = href;
+  document.querySelectorAll("[data-cells-link]").forEach((el) => { el.href = href; el.textContent = `cells_${state.period}.json`; });
+}
+// Model alanı: dışında hiç hücre yok, tıklama "alan dışı" uyarısı almalı.
+function inDomain(lon, lat) { const d = state.meta?.domain; return !d || (lon >= d[0] && lon <= d[2] && lat >= d[1] && lat <= d[3]); }
 function cellsGeo() {
   return { type: "FeatureCollection", features: state.cells.map((c) => {
     const d = c.d[state.period]; if (!d) return null;
@@ -156,6 +190,12 @@ async function initMap() {
 function addLayers() {
   if (map.getSource("cells")) return;
   if (state.coast) { map.addSource("coast", { type: "geojson", data: state.coast }); map.addLayer({ id: "coast", type: "line", source: "coast", paint: { "line-color": "#3b4a5a", "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.7, 13, 1.6], "line-opacity": 0.85 } }); }
+  const dm = state.meta?.domain;
+  if (dm) {   // model alanı sınırı — dışarıda veri yok; kullanıcı nereye kadar modellendiğini görsün
+    const [ax, ay, bx, by] = dm;
+    map.addSource("domain", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[ax, ay], [bx, ay], [bx, by], [ax, by], [ax, ay]] } } });
+    map.addLayer({ id: "domain", type: "line", source: "domain", paint: { "line-color": "#8a98a8", "line-width": 1.4, "line-dasharray": [3, 3], "line-opacity": 0.85 } });
+  }
   map.addSource("cells", { type: "geojson", data: cellsGeo() });
   map.addLayer({ id: "cells", type: "circle", source: "cells", paint: {
     "circle-radius": ["interpolate", ["exponential", 2], ["zoom"], 8, 1.1, 10, 4.4, 12, 17.5, 14, 70],
@@ -192,7 +232,7 @@ function renderLegend() {
 async function onMapClick(e) {
   if (e.originalEvent._srcHit || state.busy) return;
   const { lng, lat } = e.lngLat; const cell = nearestCell(lng, lat);
-  if (!cell) { toast(t("land")); return; }
+  if (!cell) { toast(inDomain(lng, lat) ? t("land") : t("outside"), 5500); return; }
   const d = cell.d[state.period]; if (!d) { toast(t("land")); return; }
   state.busy = true; $("#result").classList.add("hidden");
   const end = d.e.length ? pick(d.e) : null;
@@ -282,8 +322,8 @@ async function main() {
   $("#panel-toggle").onclick = () => $("#panel").classList.toggle("collapsed");
   if (matchMedia("(max-width: 760px)").matches) $("#panel").classList.add("collapsed");
   $("#link-method").onclick = (e) => { e.preventDefault(); $("#about").classList.remove("hidden"); };
-  $("#link-data").href = CFG.dataBase + "cells.json";
   await loadData();
+  updateDataLink();
   const zj = await (await fetch(CFG.dataBase + "zones.json")).json(); state.zoneBoxes = zj.zones;
   applyLang(); initSupabase(); await initMap();
   await Promise.all([loadThrows(), loadStats()]);

@@ -5,8 +5,11 @@ Her dönem için bir koşu klasörü (endpoints.csv + origins.csv gerekir):
         --sources hafta_2026-09=runs/opendrift/matrix_izmir3d_sources_20260906 --label hafta_2026-09="6–13 Eylül 2026 (K–KD rüzgârı)"
 Yıllık akış bittiğinde 51'in aylık klasörleri mevsimlere toplanır:
     python scripts/60_web_data.py --year            # runs/opendrift/year/grid_*, sources_* → yil, DJF, MAM, JJA, SON
-Çıktı (web/data/): cells.json (hücre: lon, lat, dönem → {p: {bölge: pay}, t: medyan saat, s: kıyıya vurma oranı,
-       e: [[lon, lat, saat], …] örnek varış noktaları}), sources.json (aynı yapı + ad), zones.json, meta.json
+Çıktı (web/data/): cells_<dönem>.json — DÖNEM BAŞINA ayrı dosya (site açılışta yalnız seçili dönemi indirir;
+       tek parça hâlinde 17 dönem 12 MB tutuyordu). Her hücre: {id, lon, lat, r: {p: {bölge: pay}, t: medyan saat,
+       s: kıyıya vurma oranı, n, e: [[lon, lat, saat], …] örnek varış noktaları}}.
+       Ayrıca sources.json (tüm dönemler tek dosyada, küçük), zones.json (model alanı dışı bölgeler "outside": true
+       ile işaretli), meta.json (dönem listesi + cells_files eşlemesi).
 """
 from __future__ import annotations
 import argparse, csv, glob, json, random
@@ -105,12 +108,37 @@ def main():
             "domain": [x0, y0, x1, y1], "cell_km": 1.0, "n_cells": len(cells), "n_sources": len(sources),
             "generated": __import__("datetime").date.today().isoformat(),
             "model": "SCHISM 3B (11 sigma, ~110 m iç körfez) + OpenDrift; rüzgâr ERA5, windage %2, difüzyon 5 m²/s; Stokes yok"}
-    json.dump({"type": "cells", "features": cells}, open(WEB / "cells.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    # Hücreler DÖNEM BAŞINA ayrı dosyada: site açılışta yalnız seçili dönemi indirir.
+    # (Tek parça cells.json 17 dönemde 12 MB'a çıkıyordu ve harita görünmeden önce tamamı iniyordu.)
+    for f in WEB.glob("cells_*.json"): f.unlink()
+    if (WEB / "cells.json").exists(): (WEB / "cells.json").unlink()   # eski tek parça dosya
+    sizes = []
+    for per in order_c:
+        fc = [{"id": c["id"], "lon": c["lon"], "lat": c["lat"], "r": c["d"][per]} for c in cells if per in c["d"]]
+        fp = WEB / f"cells_{per}.json"
+        json.dump({"type": "cells", "period": per, "features": fc}, open(fp, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+        sizes.append(fp.stat().st_size)
     json.dump({"type": "sources", "features": sources}, open(WEB / "sources.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
-    json.dump({"zones": [{"id": z[0], "name": z[1], "bbox": z[2:]} for z in Z] + [{"id": "Z00", "name": agg.Z00[1], "bbox": [None] * 4}]},
-              open(WEB / "zones.json", "w", encoding="utf-8"), ensure_ascii=False)
+    # Model alanının dışında kalan kıyı bölgeleri işaretlenir: bu bölgeler yapısal olarak sıfır alır,
+    # sitede "veri yok" değil "model alanı dışı" diye gösterilmeli.
+    def inside_frac(z):
+        _, _, zx0, zx1, zy0, zy1 = z
+        if zx0 is None: return 0.0                       # Z12: kutusuz, zaten "alan dışı" kovası
+        ox, oy = max(0.0, min(zx1, x1) - max(zx0, x0)), max(0.0, min(zy1, y1) - max(zy0, y0))
+        area = (zx1 - zx0) * (zy1 - zy0)
+        return (ox * oy) / area if area > 0 else 0.0
+    zlist = []
+    for z in Z:
+        out = z[0] != "Z12" and inside_frac(z) < 0.2     # kutusunun %20'sinden azı alan içindeyse
+        zlist.append({"id": z[0], "name": z[1], "bbox": list(z[2:]), **({"outside": True} if out else {})})
+    zlist.append({"id": "Z00", "name": agg.Z00[1], "bbox": [None] * 4})
+    json.dump({"zones": zlist}, open(WEB / "zones.json", "w", encoding="utf-8"), ensure_ascii=False)
+    disi = [z["id"] for z in zlist if z.get("outside")]
+    if disi: log("model alanı dışı bölgeler (sitede öyle etiketlenecek):", ", ".join(disi))
+    meta["cells_files"] = {p: f"cells_{p}.json" for p in order_c}
     json.dump(meta, open(WEB / "meta.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    log(f"web/data yazıldı: {len(cells)} hücre, {len(sources)} kaynak, dönemler {periods}; cells.json {(WEB/'cells.json').stat().st_size/1e6:.1f} MB")
+    log(f"web/data yazıldı: {len(cells)} hücre, {len(sources)} kaynak, {len(order_c)} dönem dosyası; "
+        f"dönem başına {min(sizes)/1e3:.0f}–{max(sizes)/1e3:.0f} KB, toplam {sum(sizes)/1e6:.1f} MB")
 
 if __name__ == "__main__":
     main()
