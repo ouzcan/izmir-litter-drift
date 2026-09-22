@@ -1,4 +1,4 @@
-# DURUM — nerede kaldık (21 Eylül 2026, ~20:15)
+# DURUM — nerede kaldık (22 Eylül 2026, ~18:00)
 
 > Yeni oturuma başlarken önce bunu, sonra `docs/decisions.md` ve ilgili `docs/faz3-*.md` dosyalarını oku.
 > Doğrulama planı `docs/dogrulama.md`, kurum/veri talepleri `docs/kurumlar.md`.
@@ -6,24 +6,27 @@
 
 ## Tek cümle
 İzmir Körfezi için ~110 m'lik 3B SCHISM modeli + OpenDrift zinciri çalışıyor; bir haftalık (6–13 Eylül 2026) tam
-"kaynak → kıyı" matrisi çıktı; **yıllık koşunun 8 ayı bitti (Eyl 2025 – Nis 2026), Mayıs sürüyor**; OpenDrift aylık
-partileri gözcü betiğiyle otomatik işleniyor (7 ay × 2 mod hazır); web sitesinin ilk sürümü yazıldı, GitHub'a push +
-Pages ayarı bekliyor; doğrulama planı çıkarıldı, henüz hiç doğrulama yapılmadı.
+"kaynak → kıyı" matrisi çıktı; **yıllık koşu TAMAMLANDI** (12 ay SCHISM + 12 ay × 2 mod OpenDrift, 22 Eylül
+sabahı); mevsimsel haritalar ve site verisi üretildi; site yayına hazır (tek eksik GitHub deposu + Pages);
+doğrulama planı çıkarıldı ama **henüz hiç doğrulama yapılmadı** — sıradaki iş bu.
 
 ## Şu an çalışan / bekleyen şeyler
-- **SCHISM yıllık koşu** (WSL, `runs/schism/run_year.sh`, `nohup`): **3 sa 20 dk/ay** (ölçüldü, çok kararlı).
-  Biten: Eyl–Ara 2025, Oca–Nis 2026. Mayıs 21 Eylül 18:52'de başladı. Kalan 4 ay → **22 Eylül ~08:10**.
-  Durum: `tail -f runs/schism/run_year.log`. Kesilirse aynı komutla başlat; biten aylar atlanır.
-- **OpenDrift gözcüsü** (`scripts/watch_opendrift.bat`): 30 dk'da bir tarar, yüzey dosyası hazır ayları koşar,
-  bitenleri atlar. Eyl 2025 – Mar 2026 arası 7 ay × 2 mod bitti. sources ~30–50 dk/ay, grid ~30 dk/ay.
-  Ay M ancak M+1'in yüzey dosyası varken koşulur (yoksa ay sonunda salınanlar takip edilemiyordu).
-- **Yıl bitince elle (2 komut, ~10 dk):** `python scripts\52_seasonal_maps.py` → `python scripts\60_web_data.py --year`.
-- **Web sitesi**: `web/` hazır ve commit'li; depoda **uzak sunucu yok**, makinede `gh` de kurulu değil, git'te
-  credential.helper ayarlı değil. Kullanıcı: GitHub'da `izmir-litter-drift` deposu aç (boş), `git remote add origin …`,
-  `git push -u origin main`, Settings → Pages → Source "GitHub Actions". `web/config.js` içindeki `repo` adresi
-  `oguzcanozupek` varsayıldı. `.env` `.gitignore`'da ve hiçbir commit'te yok — depo herkese açık olabilir (2,8 MB).
-- **`config/sources.csv` eksikleri**: S06 Çitlembik, S07 Irmak, S08 Kavaklıdere **koordinatsız** → koşuya girmiyor
-  (29 noktanın 23'ü koşuyor). M03 Teos, M04 Alaçatı, F04 Dikili model alanı (26,3–27,2 / 38,3–38,9) dışında.
+- **Koşan bir şey yok.** Yıl bitti: 12 aylık yüzey dosyası `data/processed/`, 12 ay × 2 mod OpenDrift
+  `runs/opendrift/year/`, mevsimsel çıktılar `runs/opendrift/year/summary/`, site verisi `web/data/`.
+  Gözcü penceresi (`watch_opendrift.bat`) kapatılabilir.
+- **Yıllık sonuç — ızgara**: Karaburun–Mordoğan doğu kıyısı %24, körfez dışı %24, Çeşme–Alaçatı %9,
+  Aliağa–Çandarlı–Dikili %9, Ildır–Gülbahçe %8, Foça–Gediz %7, Güzelbahçe–Urla %7; iç körfez %1
+  (1 km ızgarada iç körfez toplam alanın çok küçük parçası).
+- **Yıllık sonuç — kaynaklar**: Karşıyaka–Bayraklı %26, İnciraltı–Balçova %24 (ikisi yükün yarısı),
+  Güzelbahçe–Urla %12, Kordon–Konak / Karaburun / Foça–Gediz %7'şer, Bostanlı–Mavişehir %6.
+  **Ağırlıklandırılmamış** — 23 kaynağın çoğu iç körfezde olduğu için bu dağılım kısmen kaynak listesinin şekli.
+- **Mevsimsellik (ızgara, medyan kıyıya vurma)**: Eyl 21 sa, Ara 27 sa (%95 vuruyor — yılın en düşüğü),
+  Oca 24 sa, Mar 18 sa, Haz 21 sa. Kış ayrışıyor: çöp daha uzun suda kalıyor, daha büyük kısmı körfezi terk ediyor.
+- **Web sitesi**: yayına hazır. Kullanıcı: GitHub'da `izmir-litter-drift` deposu aç (boş), `git remote add origin …`,
+  `git push -u origin main`, Settings → Pages → Source "GitHub Actions". `web/config.js` `repo` adresi
+  `oguzcanozupek` varsayıldı. `.env` `.gitignore`'da ve hiçbir commit'te yok. Depo 6,8 MB.
+- **`config/sources.csv` eksikleri**: S06 Çitlembik, S07 Irmak, S08 Kavaklıdere koordinatsız (29 noktanın 23'ü koşuyor).
+  M03 Teos, M04 Alaçatı, F04 Dikili model alanı dışında.
 
 ## Bekleyen kararlar (kullanıcı girdisi gerekiyor)
 - **Duyarlılık varyantları**: hangileri koşulacak — windage 0,01/0,03, rüzgârsız, difüzyon 1/10, 2B karşılaştırma.
@@ -67,8 +70,10 @@ post/status) → `51` → `52` → `60 --year`. Ortak toplulaştırma: `scripts/
 > Tek cümle: **modeli büyütmeyi bırak, sınamaya başla.** Gerekçe `docs/decisions.md` 21 Eylül maddesi.
 > Ayrıntılı görev listesi: Claude dokümanı "Yapılacaklar" → "Öncelik" bölümü.
 
-**1 · Yıl biter bitmez (~1 saat)**
-1. `python scripts\52_seasonal_maps.py` → `python scripts\60_web_data.py --year`
+**1 · Yıl biter bitmez (~1 saat)** — ✅ 52 ve 60 koşuldu (22 Eylül)
+1. ~~`52_seasonal_maps.py` → `60_web_data.py --year`~~ — bitti. Site verisi dönem başına ayrı dosyada
+   (`cells_<dönem>.json`, açılış yükü ~245 KB gzip); model alanı sınırı haritada kesik çizgi; Z09 Seferihisar ve
+   Z11 Selçuk `zones.json`'da `outside: true` (kutularının %11 ve %0'ı alan içinde → yapısal sıfır).
 2. Siteyi yayına al: GitHub deposu (boş) + `git remote add origin …` + `git push -u origin main` +
    Settings → Pages → Source "GitHub Actions". Site yan ürün değil — kurumlara yazarken elde gösterilecek şey.
 
