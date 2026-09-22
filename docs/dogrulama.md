@@ -12,6 +12,26 @@ hakem doğrudan "parçacık yolları doğru mu?" diye soracak.
 
 ## Katman 1 — Zorlama alanları (ücretsiz, hemen)
 
+> **Betikler hazır (22 Eylül):** `scripts/70_validate_sealevel.py` (Menteş) ve `scripts/71_validate_wind.py` (LTBJ).
+> İkisi de iki aşamalı: `--download` ile gözlemi indir, sonra argümansız koş. **İndirme yalnız senin Windows
+> makinenden yapılabilir** — IOC ve Iowa State sunucuları hem bulut konteynerinden hem cihaz VM'inden proxy
+> tarafından engelli (403). Model tarafı sentetik gözlemle uçtan uca test edildi: enjekte edilen datum kayması,
+> gürültü ve yön sapması birebir geri okundu.
+>
+> ```
+> python scripts\70_validate_sealevel.py --download     # ~366 istek, birkaç dakika
+> python scripts\70_validate_sealevel.py
+> python scripts\71_validate_wind.py --download         # tek istek
+> python scripts\71_validate_wind.py
+> ```
+> Harmonik karşılaştırma için önce `pip install utide` (opsiyonel). Çıktılar `docs/sonuclar/dogrulama/`.
+>
+> Model tarafında bilinmesi gerekenler: su seviyesi `schism_surface_*.nc` içindeki `elev` alanından okunuyor
+> (12 ayın hepsi var, ham çıktı silinmiş olsa da kayıp yok); Menteş'e en yakın ağ düğümü **#45613, 44 m uzakta**,
+> derinlik 1,0 m. Model su seviyesi standart sapması yıl boyunca **~0,10 m** — İzmir Körfezi'nde gelgit küçük,
+> yani karşılaştırmaya meteorolojik kabarma hâkim olacak; harmonik analiz bu yüzden önemli.
+> Rüzgârda ERA5 istasyona **çift doğrusal ara değerle** taşınıyor (0,25° hücre köşeleri 27,00–27,25 / 38,25–38,50).
+
 ### 1.1 Deniz seviyesi — Menteş mareografı
 - İstasyon: **Menteş**, 38,4277°N 26,7166°E (Çeşme yarımadası, dış körfez ağzı). İşleten: Harita Genel Müdürlüğü (TUDES).
 - IOC Sea Level Monitoring'de `ment` koduyla **operasyonel, radar sensör, 30 sn örnekleme, ücretsiz**.
