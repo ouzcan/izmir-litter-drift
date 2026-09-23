@@ -15,12 +15,21 @@ bekliyor** (`scripts\watch_sensitivity.bat`); sonra makale.
 ```
 scripts\watch_sensitivity.bat
 ```
-7 adım, sırayla (her adım biten ayları atlar, kesilirse aynı komutla devam): taban v2 `base2` (alan dışı biter) →
-windage 0,03 `w3` → 0,01 `w1` → rüzgârsız `w0` → difüzyon 1 `d1` / 10 `d10` → yeniden yüzdürme `rf5` (pahalı, 2 km
-ızgara). Her varyanttan sonra `52 --tag`, sonda `54_sensitivity.py` → `runs/opendrift/year/sensitivity/sensitivity_grid.md`
-(bölge × varyant, tabana göre puan farkı, ilk-3 değişti mi). Ölçütler koşudan önce sabitlendi; seçme yok.
-Süre bilinmiyor — taban bir ay ~? dk sürmüştü; `rf5`'i önce tek ayla ölç (bat içinde komut).
+8 adım, sırayla (her adım biten ayları atlar, kesilirse aynı komutla devam): taban v2 `base2` (alan dışı biter) →
+windage 0,03 `w3` → 0,01 `w1` → rüzgârsız `w0` → difüzyon 1 `d1` / 10 `d10` → `b2k` (taban v2, 2 km ızgara; rf5'in
+kontrolü) → yeniden yüzdürme `rf5` (2 km ızgara × 5, kaynak modu n_src 3). Her varyanttan sonra `52 --tag`, sonda
+`54_sensitivity.py` üç kez → `runs/opendrift/year/sensitivity/sensitivity_grid_1km.md` (w3/w1/w0/d1/d10 vs base2),
+`sensitivity_grid_rf.md` (rf5 vs b2k), `sensitivity_sources_rf.md`. Ölçütler koşudan önce sabitlendi; seçme yok.
+**Ölçülen süre (23 Eylül, Haziran ayı):** 1 km ızgara ayı 6 dk; rf5 2 km × 5, 45 gün izleme 32 dk. Kaba toplam
+~19 saat (rf5 hariç ~9). Haziran `base2` ve `rf5` zaten koşuldu, bat bunları atlar.
 Sonuç beğenilirse site `60_web_data.py --year --tag base2` ile taban v2'ye geçer (henüz yapılmadı).
+
+**Haziran ön bulgusu (tek ay, karar için değil):** taban v2'de Z12 %24'ün tamamı artık `outside` (eski tabanda
+"vurmuş" sayılan alan-dışı parçacıklar), Z08 Çeşme 12→8, Z10 Aliağa 9→5, Z06 26→23; medyan vurma 21→15 sa (uzun
+yapay yolculuklar gitti). rf5 (2 km, kontrolsüz karşılaştırma): Z06 23→17, adalar/Karaburun batısı (Z13/Z14/Z16)
+yarıya, Z05 Güzelbahçe–Urla 9→16, Z15 Ildır–Gülbahçe 10→16 — yeniden yüzen çöp açık kıyılardan güneydeki korunaklı
+koylara taşınıyor, `outside` payı değişmiyor (~%23). "İlk temas kalır" varsayımı açık kıyı paylarını şişiriyor.
+2 km ızgaranın kıyı tohumu 1 km'den fazla (3 saatte vuran %15,8 vs %11,8) → b2k kontrolü bu yüzden.
 
 Yıl bitti. 12 aylık yüzey dosyası `data/processed/schism_surface_*.nc` (her biri ~550 MB, `elev` + `dahv` içerir —
 ham SCHISM çıktısı silindi ama su seviyesi KAYIP DEĞİL), 12 ay × 2 mod OpenDrift `runs/opendrift/year/`,
@@ -143,6 +152,8 @@ Gözcü: `scripts/watch_opendrift.bat`. Ortak toplulaştırma `scripts/od_agg.py
 - Varyant karşılaştırması tohumla: `51 --seed 0` (varsayılan) `np.random.seed` → salım yarıçapı ve difüzyon aynı
   rastgele diziyle; varyantlar arası fark yalnız fizik parametresinden.
 - `endpoints.csv`'de yeni `status` sütunu (stranded/outside/active/…); eski dosyalar sütunsuz da okunur (`stranded`'dan türetilir).
+- OpenDrift uyarısı "Data block from era5_wind… not large enough… Buffer size (3)": zararsız — haftalık ızgara salımı
+  mevcut veri bloğunun dışına düşünce o adımda zamanda tek taraflı ara değer alınır (kaynak yorumu: "not critical").
 
 ## Sıradaki adımlar
 > Öncelik kararı (21 Eylül, `docs/decisions.md`): **modeli büyütmeyi bırak, sınamaya başla.**

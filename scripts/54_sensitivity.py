@@ -12,7 +12,8 @@ Varyantların ay kümesi tabandan farklıysa uyarır ve yalnız ORTAK ayları ka
 
 Kullanım (Windows, litter):
     python scripts/54_sensitivity.py                          # taban: base2 varsa o, yoksa etiketsiz; varyant: bulunan tüm etiketler
-    python scripts/54_sensitivity.py --base base2 --tags w3 w1 w0 d1 d10 rf5
+    python scripts/54_sensitivity.py --base base2 --tags w3 w1 w0 d1 d10 --name 1km
+    python scripts/54_sensitivity.py --base b2k --tags rf5 --modes grid --name rf     # refloat 2 km ızgarada → kontrolü b2k
 """
 from __future__ import annotations
 import argparse, csv, importlib, json
@@ -66,6 +67,7 @@ def metrics(mode, tag, keys, zids):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--base", default=None); ap.add_argument("--tags", nargs="*", default=None)
     ap.add_argument("--modes", nargs="*", default=["grid", "sources"])
+    ap.add_argument("--name", default="", help="çıktı adı eki: sensitivity_<mode>_<name>.{csv,md}")
     a = ap.parse_args()
     out = YEAR / "sensitivity"; out.mkdir(parents=True, exist_ok=True)
     Z = agg.zones(); zn = agg.zone_names(Z); zids = [z[0] for z in Z if z[0] != "Z12"] + ["Z00", "Z12"]
@@ -88,7 +90,8 @@ def main():
         # CSV: varyant × ölçüt
         cols = ["tag", "label", "n_months", "n_origins", "n_particles", "strand_pct", "outside_pct", "afloat_pct", "t_med_h",
                 "top1", "top2", "top3", "top3_same_set", "top3_same_order", "max_abs_delta_pt", "max_abs_delta_zone"] + zids
-        with open(out / f"sensitivity_{mode}.csv", "w", encoding="utf-8", newline="") as fh:
+        sfx = f"_{a.name}" if a.name else ""
+        with open(out / f"sensitivity_{mode}{sfx}.csv", "w", encoding="utf-8", newline="") as fh:
             w = csv.DictWriter(fh, fieldnames=cols); w.writeheader()
             for m in M:
                 d = {z: m["share"][z] - B["share"][z] for z in zids}; zmax = max(zids, key=lambda z: abs(d[z]))
@@ -114,7 +117,7 @@ def main():
         L.append("| ilk 3 bölge | " + " | ".join(" › ".join(m["top3"]) + ("" if m is B else (" ✓" if m["top3"] == B["top3"] else (" (sıra)" if set(m["top3"]) == set(B["top3"]) else " **(küme)**"))) for m in M) + " |")
         L += ["", "Parantez: tabana göre fark, yüzde puanı. ✓ ilk-3 aynı sırayla; (sıra) aynı küme farklı sıra; (küme) farklı bölge girdi.",
               "Z12 = alan dışına çıkan + izleme sonunda denizde kalan. Refloat varyantında vurma süresi = ilk kıyı teması."]
-        (out / f"sensitivity_{mode}.md").write_text("\n".join(L), encoding="utf-8")
+        (out / f"sensitivity_{mode}{sfx}.md").write_text("\n".join(L), encoding="utf-8")
         print("\n".join(L)); print()
     log("çıktılar:", out)
 
