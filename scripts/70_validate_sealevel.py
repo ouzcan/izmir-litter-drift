@@ -119,12 +119,31 @@ def metrics(o, m):
     return {"n": len(o), "bias_m": bias, "rmse_m": rmse, "crmse_m": crmse, "r": r,
             "std_obs_m": float(o.std()), "std_mod_m": float(m.std()), "std_orani": float(m.std() / o.std())}
 
+# Ana gelgit bileşenleri — derece/saat. Bir yıllık kayıt bunları ayırmaya fazlasıyla yeter
+# (en zoru K1-P1, ~183 gün gerektirir). Nodal düzeltme yok: aynı fit iki seriye de uygulandığı
+# için genlik/faz KARŞILAŞTIRMASINDA astronomik düzeltmeler büyük ölçüde sadeleşir.
+TIDES = {"M2": 28.9841042, "S2": 30.0000000, "N2": 28.4397295,
+         "K1": 15.0410686, "O1": 13.9430356, "P1": 14.9589314}
+
+def harmonic_fit(t, y, names=None):
+    """En küçük kareler gelgit uyumu. Döner: (bileşen -> (genlik m, faz °), uydurulan gelgit serisi)."""
+    names = names or list(TIDES)
+    t0 = t[0]
+    h = np.array([(ti - t0).total_seconds() / 3600.0 for ti in t])
+    cols = [np.ones_like(h)]
+    for n in names:
+        w = np.deg2rad(TIDES[n])
+        cols += [np.cos(w * h), np.sin(w * h)]
+    A = np.column_stack(cols)
+    coef, *_ = np.linalg.lstsq(A, y, rcond=None)
+    out = {}
+    for i, n in enumerate(names):
+        a, b = coef[1 + 2 * i], coef[2 + 2 * i]
+        out[n] = (float(np.hypot(a, b)), float(np.rad2deg(np.arctan2(-b, a)) % 360))
+    return out, A @ coef
+
 def harmonics(t, y, lat):
-    try: import utide
-    except ImportError: return None
-    tn = np.array([(ti - datetime(1, 1, 1)).total_seconds() / 86400 + 1 for ti in t])
-    c = utide.solve(tn, y - y.mean(), lat=lat, method="ols", conf_int="none", verbose=False)
-    return {n: (float(a), float(g)) for n, a, g in zip(c.name, c.A, c.g) if n in ("M2", "S2", "K1", "O1", "N2", "P1")}
+    return harmonic_fit(t, y)[0]
 
 def main():
     ap = argparse.ArgumentParser()
@@ -153,14 +172,22 @@ def main():
          f"  merkezlenmiş RMSE          {st['crmse_m']:.3f} m   ← asıl ölçüt",
          f"  Pearson r                  {st['r']:.3f}",
          f"  std gözlem / model         {st['std_obs_m']:.3f} / {st['std_mod_m']:.3f} m  (oran {st['std_orani']:.2f})"]
-    ho, hm = harmonics(ort, o, LAT), harmonics(ort, m, LAT)
-    if ho and hm:
-        L += ["", "gelgit harmonikleri (genlik m / faz °):", f"  {'bileşen':8s} {'gözlem':>16s} {'model':>16s}"]
-        for k in ("M2", "S2", "K1", "O1", "N2", "P1"):
-            if k in ho and k in hm:
-                L.append(f"  {k:8s} {ho[k][0]:8.4f} / {ho[k][1]:5.1f} {hm[k][0]:8.4f} / {hm[k][1]:5.1f}")
-    else:
-        L += ["", "(utide kurulu değil — harmonik karşılaştırma atlandı: pip install utide)"]
+    ho, fo = harmonic_fit(ort, o); hm, fm = harmonic_fit(ort, m)
+    L += ["", "gelgit harmonikleri (en küçük kareler; genlik cm / faz °):",
+          f"  {'bileşen':8s} {'gözlem':>14s} {'model':>14s}   {'genlik oranı':>12s} {'faz farkı':>10s}"]
+    for k in ("M2", "S2", "N2", "K1", "O1", "P1"):
+        ao, go = ho[k]; am, gm = hm[k]
+        dg = (gm - go + 180) % 360 - 180
+        L.append(f"  {k:8s} {100*ao:7.2f} / {go:5.1f} {100*am:7.2f} / {gm:5.1f}   {am/max(ao,1e-9):11.2f} {dg:+9.1f}°")
+    # gelgit çıkarıldıktan sonra kalan (meteorolojik) sinyal — hata nerede?
+    ro, rm = o - fo, m - fm
+    tide_o, tide_m = fo - fo.mean(), fm - fm.mean()
+    st_t = metrics(tide_o, tide_m); st_r = metrics(ro, rm)
+    L += ["", "hata nerede? (seri gelgit + kalan olarak ayrıştırıldı)",
+          f"  {'':22s} {'std gözlem':>11s} {'std model':>10s} {'crmse':>8s} {'r':>7s}",
+          f"  {'gelgit bileşeni':22s} {100*st_t['std_obs_m']:10.1f}cm {100*st_t['std_mod_m']:9.1f}cm {100*st_t['crmse_m']:7.1f}cm {st_t['r']:7.3f}",
+          f"  {'kalan (meteorolojik)':22s} {100*st_r['std_obs_m']:10.1f}cm {100*st_r['std_mod_m']:9.1f}cm {100*st_r['crmse_m']:7.1f}cm {st_r['r']:7.3f}",
+          f"  {'toplam':22s} {100*st['std_obs_m']:10.1f}cm {100*st['std_mod_m']:9.1f}cm {100*st['crmse_m']:7.1f}cm {st['r']:7.3f}"]
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "sealevel_summary.txt").write_text("\n".join(L), encoding="utf-8")
     print("\n".join(L))

@@ -7,4 +7,17 @@ ortak saat: 6517 (2025-09-01 → 2026-08-31); model 8760 sa, gözlem 6518 sa
   Pearson r                  0.659
   std gözlem / model         0.132 / 0.098 m  (oran 0.75)
 
-(utide kurulu değil — harmonik karşılaştırma atlandı: pip install utide)
+gelgit harmonikleri (en küçük kareler; genlik cm / faz °):
+  bileşen          gözlem          model   genlik oranı  faz farkı
+  M2          5.51 / 135.9    4.57 / 107.3          0.83     -28.6°
+  S2          4.34 / 311.6    2.31 / 292.7          0.53     -18.9°
+  N2          1.05 / 283.0    0.81 / 245.4          0.77     -37.6°
+  K1          2.98 / 292.5    3.09 / 288.0          1.04      -4.4°
+  O1          1.68 / 341.8    1.80 / 337.7          1.07      -4.0°
+  P1          0.90 / 139.5    1.26 / 134.9          1.40      -4.5°
+
+hata nerede? (seri gelgit + kalan olarak ayrıştırıldı)
+                          std gözlem  std model    crmse       r
+  gelgit bileşeni               5.6cm       4.5cm     2.5cm   0.896
+  kalan (meteorolojik)         12.0cm       8.8cm     9.7cm   0.604
+  toplam                       13.2cm       9.8cm    10.0cm   0.659

@@ -20,8 +20,43 @@ Kapsama 6.518 / 8.784 saat (%74; mareograf kaydındaki boşluklar). Saat başın
 Hata (10 cm) gözlenen salınımın (13,2 cm) %76'sı kadar — yani ortalama bir sonuç, kötü değil ama
 "doğrulandı" demek için yeterli değil.
 
-**Açık soru:** hata gelgitte mi, meteorolojik kabarmada mı? Ayrıştırmak için `pip install utide` +
-`70_validate_sealevel.py` yeniden koşulmalı. Elenen olasılıklar:
+### Hata nerede? (gelgit / kalan ayrıştırması)
+
+Seri, en küçük kareler gelgit uyumuyla (M2 S2 N2 K1 O1 P1, numpy — utide gerekmiyor) ikiye ayrıldı:
+
+| bileşen | std gözlem | std model | crmse | r |
+|---|---|---|---|---|
+| gelgit | 5,6 cm | 4,5 cm | **2,5 cm** | **0,896** |
+| kalan (meteorolojik) | 12,0 cm | 8,8 cm | **9,7 cm** | **0,604** |
+| toplam | 13,2 cm | 9,8 cm | 10,0 cm | 0,659 |
+
+**Cevap net: hata gelgitte değil, kabarmada.** 10,0 cm'lik toplam hatanın 9,7 cm'i meteorolojik kalandan
+geliyor. Gelgit iyi tutuyor (r 0,90, hata 2,5 cm).
+
+Harmonikler (genlik cm / faz °):
+
+| bileşen | gözlem | model | genlik oranı | faz farkı |
+|---|---|---|---|---|
+| M2 | 5,51 / 135,9 | 4,57 / 107,3 | 0,83 | −28,6° |
+| S2 | 4,34 / 311,6 | 2,31 / 292,7 | **0,53** | −18,9° |
+| N2 | 1,05 / 283,0 | 0,81 / 245,4 | 0,77 | −37,6° |
+| K1 | 2,98 / 292,5 | 3,09 / 288,0 | **1,04** | −4,4° |
+| O1 | 1,68 / 341,8 | 1,80 / 337,7 | **1,07** | −4,0° |
+| P1 | 0,90 / 139,5 | 1,26 / 134,9 | 1,40 | −4,5° |
+
+**Günlük bileşenler (K1, O1, P1) neredeyse kusursuz** — genlik oranı 1,04–1,07, faz hatası 4°.
+**Yarı-günlük bileşenler (M2, S2, N2) sönümlü ve ~28° önde.**
+
+Bu sönüm mareograf düğümünün sığ olmasından (1,0 m) DEĞİL: Menteş çevresinde 1 m'den 30 m'ye, 44 m'den
+2,3 km'ye kadar beş düğüm denendi, M2 oranı 0,83–0,84 ve faz −28,6° sabit kaldı. Yani yerel batimetri ya da
+dip sürtünmesi değil, **sınır koşulundan miras alınan** bir hata — CMEMS'in 4 km'lik `zos` alanı Ege'deki
+küçük ve karmaşık yarı-günlük gelgiti yerel olarak tam çözemiyor. Günlük gelgitin daha geniş ölçekli
+olması ve iyi tutması bu okumayı destekliyor.
+
+**Ama düzeltmeye değmez:** gelgit toplam salınımın yalnız 5,6/13,2'si ve hatası 2,5 cm. `bctides.in`'e
+FES2014/TPXO harmonikleri eklemek (`nbfr > 0`) en fazla ~2 cm kazandırır. Asıl açık kabarmada.
+
+Elenen diğer olasılıklar:
 - Açık sınırda gelgit YOK gibi görünüyor (`bctides.in`: `nbfr = 0`) **ama** CMEMS `zos` ürünü gelgit
   içeriyor ([MEDSEA_ANALYSISFORECAST_PHY_006_013](https://data.marine.copernicus.eu/product/MEDSEA_ANALYSISFORECAST_PHY_006_013/description)
   — "including tides"; ayrıca ayrı bir "detided" sürümü var). Yani gelgit sınırdan zaman serisi olarak giriyor.
@@ -71,7 +106,11 @@ sürüklenme de az enerjili demektir. Duyarlılık koşuları (windage 0,01 / 0,
 doğru yolu — artık keyfi bir duyarlılık testi değil, gözleme dayalı bir gerekçesi var.
 
 ## Sıradaki
-1. `pip install utide` → `70` yeniden koş: gelgit mi, kabarma mı?
-2. Mareograf kaydındaki 5 sıçramayı ayıkla, metrikleri yeniden hesapla.
-3. Duyarlılık koşuları — windage bandı artık gerekçeli.
-4. Katman 2 (drifter) hâlâ tek gerçek Lagrange doğrulaması.
+1. ~~gelgit mi, kabarma mı~~ — **cevaplandı: kabarma.** Gelgit r 0,90 / 2,5 cm; kalan r 0,60 / 9,7 cm.
+2. Kabarmayı iyileştirmek: ERA5 yerine daha yüksek çözünürlüklü rüzgâr (CARRA yok bu bölgede; alternatif
+   ERA5 üzerinden bir rüzgâr ölçek katsayısı ya da WRF ile dinamik indirgeme) — maliyeti yüksek, önce
+   duyarlılıkla bracketlemek daha mantıklı.
+3. Duyarlılık koşuları — windage bandı artık gözleme dayalı gerekçeli (model zorlaması %25 az enerjili).
+4. Mareograf kaydındaki 5 sıçramayı ayıkla, metrikleri yeniden hesapla (etkisi küçük olmalı).
+5. Gelgit için `nbfr > 0` + FES2014 — ikinci sürüm, kazanç ~2 cm, öncelik düşük.
+6. Katman 2 (drifter) hâlâ tek gerçek Lagrange doğrulaması.
