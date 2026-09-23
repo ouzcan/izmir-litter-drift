@@ -3,13 +3,14 @@
 İzmir Körfezi'nde (ve il kıyılarında) denize giren yüzen çöpün akıntı ve rüzgârla nereye taşındığını, hangi kıyıya vurduğunu
 modelleyen açık çalışma: **makale + "bu çöp nereye gider?" web haritası**.
 
-**Durum (21 Eylül 2026):** yerel 3B hidrodinamik model (SCHISM, ~110 m iç körfez) + OpenDrift zinciri çalışıyor;
-bir haftalık tam kaynak→kıyı matrisi çıktı; **yıllık koşunun (Eyl 2025–Ağu 2026) 8 ayı bitti, 22 Eylül sabahı tamamlanıyor**;
-aylık OpenDrift partileri gözcü betiğiyle otomatik işleniyor; web sitesinin ilk sürümü `web/` altında (yayın bekliyor).
-Nerede kaldık: **`docs/DURUM.md`**. Karar kaydı: `docs/decisions.md`. Doğrulama planı: `docs/dogrulama.md`.
+**Site yayında: https://ouzcan.github.io/izmir-litter-drift/**
 
-**Öncelik (21 Eylül kararı):** modeli büyütmeyi bırak, sınamaya başla. Sıra: site yayını → kaynak ağırlıklandırma +
-doğrulama Katman 1 → alan-dışı düzeltmesi + duyarlılık → makale. Ertelenenler: Stokes drift, ısı akısı, alan genişletme.
+**Durum (23 Eylül 2026):** yıllık koşu (Eyl 2025 – Ağu 2026) **tamamlandı** — 12 ay 3B SCHISM + 12 ay × 2 mod
+OpenDrift, mevsimsel haritalar, site verisi. Kaynak ağırlıklandırma senaryolaştırıldı. **Doğrulama Katman 1 bitti**:
+su seviyesi (Menteş mareografı) ve rüzgâr (LTBJ METAR) karşılaştırmaları yapıldı — hidrodinamik çekirdek sağlam,
+meteorolojik zorlama az enerjili. Sırada duyarlılık koşuları ve makale.
+Nerede kaldık: **`docs/DURUM.md`**. Karar kaydı: `docs/decisions.md`. Doğrulama sonuçları:
+`docs/sonuclar/dogrulama/BULGULAR.md`.
 
 ## Yöntem (kısa)
 1. Batimetri EMODnet DTM 2024, kıyı GSHHS f → meshkernel ağı (76 bin düğüm; iç körfez ~110 m, dış ~430 m) → SCHISM `hgrid.gr3`.
@@ -18,11 +19,20 @@ doğrulama Katman 1 → alan-dışı düzeltmesi + duyarlılık → makale. Erte
 4. Kıyı bölgesi payları, kıyıya vurma süreleri → matrisler, mevsimsel haritalar, web verisi.
 
 ## Doğrulama
-Dört katman: (1) zorlama alanları — Menteş mareografı (IOC, ücretsiz), LTBJ METAR rüzgârı, Copernicus SST 1 km;
-(2) Lagrange — düşük maliyetli GPS drifter kampanyası, skill score; (3) kıyı birikim deseni — EMODnet plaj çöpü ve
-Urla transektleri ile korelasyon; (4) iç tutarlılık — duyarlılık koşuları, geriye doğru koşu, literatür karşılaştırması.
-Veri kaynakları, API adresleri, izin mevzuatı ve bilinen yanlılıklar: **`docs/dogrulama.md`**.
-Kurum/veri talepleri: `docs/kurumlar.md`.
+Dört katman: (1) zorlama alanları — Menteş mareografı, LTBJ METAR, Copernicus SST; (2) Lagrange — GPS drifter
+kampanyası + skill score; (3) kıyı birikim deseni — EMODnet plaj çöpü ve Urla transektleriyle korelasyon;
+(4) iç tutarlılık — duyarlılık koşuları, geriye doğru koşu, literatür karşılaştırması.
+Plan ve veri kaynakları: **`docs/dogrulama.md`** · kurum talepleri: `docs/kurumlar.md`.
+
+**Katman 1 sonuçları (23 Eylül)** — `docs/sonuclar/dogrulama/BULGULAR.md`:
+
+| | gözlem | model | crmse | r |
+|---|---|---|---|---|
+| su seviyesi, gelgit bileşeni | 5,6 cm | 4,5 cm | 2,5 cm | 0,896 |
+| su seviyesi, meteorolojik kalan | 12,0 cm | 8,8 cm | 9,7 cm | 0,604 |
+
+Gelgit tutuyor, kabarma tutmuyor; ERA5 rüzgârı kara istasyonunda 0,55 çarpanı kadar düşük ve >10 m/s'yi
+hiç görmüyor. Teşhis: **meteorolojik zorlama az enerjili, hidrodinamik model değil.**
 
 ## Betikler (`scripts/`, Windows conda `litter`; SCHISM WSL2 Ubuntu'da)
 | Betik | İş |
@@ -39,6 +49,9 @@ Kurum/veri talepleri: `docs/kurumlar.md`.
 | `42_release_matrix.py`, `43_rezone.py`, `od_agg.py` | kaynak/ızgara matrisi, yeniden toplulaştırma |
 | `50_year_pipeline.py` | yıllık koşu: plan/check/download/prepare/script/post/status |
 | `51_year_opendrift.py`, `52_seasonal_maps.py` | aylık salım partileri, mevsimsel özetler |
+| `53_weighted_shares.py` | kaynak yüküne göre ağırlıklı bölge payları (3 senaryo; koşu tekrarı gerekmez) |
+| `70_validate_sealevel.py` | doğrulama: SCHISM ↔ Menteş mareografı (gelgit/kalan ayrıştırmalı) |
+| `71_validate_wind.py` | doğrulama: ERA5 ↔ LTBJ METAR (günlük döngü analizli) |
 | `watch_opendrift.bat` | gözcü: 30 dk'da bir tarayıp yüzey dosyası hazır olan ayları koşar |
 | `60_web_data.py` | web sitesi veri paketi (`web/data/`) |
 | `wsl_build_schism.sh` | SCHISM derleme (WSL2) |
@@ -50,11 +63,11 @@ Yayın: GitHub Pages (`.github/workflows/pages.yml`). Ayrıntı: `docs/web.md`, 
 ## Dizin yapısı
 
 ```
-config/      çalışma alanı, kaynak noktaları, kıyı bölgeleri, model parametreleri, SCHISM param şablonu
+config/      çalışma alanı, kaynak noktaları + ağırlıkları, kıyı bölgeleri, model parametreleri
 data/raw/    indirilen ham veri (git dışı)      data/processed/  aylık yüzey akıntı dosyaları (git dışı)
 runs/        SCHISM ve OpenDrift koşuları (git dışı)
 scripts/     zincirin tamamı (yukarıdaki tablo)
-docs/        DURUM, kararlar, faz notları, doğrulama planı, kurumlar, sonuçlar (docs/sonuclar), web notları
+docs/        DURUM, kararlar, faz notları, doğrulama planı + sonuçları, kurumlar, sonuçlar, web notları
 web/         site kaynak kodu + veri paketi
 paper/       makale taslağı, şekiller
 ```
