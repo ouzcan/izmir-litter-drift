@@ -1,0 +1,10 @@
+SCHISM ↔ Menteş mareografı (IOC `ment`, 38.4277°K 26.7166°D)
+ortak saat: 6517 (2025-09-01 → 2026-08-31); model 8760 sa, gözlem 6518 sa
+
+  bias (model − gözlem)      -1.667 m   (datum farkı; karşılaştırmada çıkarıldı)
+  RMSE (ham)                 1.670 m
+  merkezlenmiş RMSE          0.100 m   ← asıl ölçüt
+  Pearson r                  0.659
+  std gözlem / model         0.132 / 0.098 m  (oran 0.75)
+
+(utide kurulu değil — harmonik karşılaştırma atlandı: pip install utide)

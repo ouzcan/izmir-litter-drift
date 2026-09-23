@@ -124,6 +124,20 @@ def main():
          "",
          "NOT: LTBJ iç kesimde ve 120 m rakımda; körfez üzerindeki imbatı tam temsil etmez.",
          "Bu karşılaştırma ERA5'in zamansal doğruluğunu sınar, mutlak deniz üstü hız kalibrasyonunu değil."]
+    # Günlük döngü — imbat (deniz meltemi) İzmir'de baskın; ERA5 döngüyü yakalıyor mu, yoksa
+    # bias saatten bağımsız sabit bir çarpan mı? İkisi çok farklı teşhisler.
+    h = np.array([(t + timedelta(hours=3)).hour for t in ort])          # yerel saat (UTC+3)
+    L += ["", "günlük döngü (yerel saat, yıl ortalaması):", f"  {'saat':>4s} {'METAR':>7s} {'ERA5':>7s} {'oran':>6s} {'METAR yön':>10s} {'ERA5 yön':>9s}"]
+    for k in range(0, 24, 2):
+        m_ = h == k
+        if not m_.any(): continue
+        odg = (np.rad2deg(np.arctan2(-ou[m_].mean(), -ov[m_].mean())) + 360) % 360
+        mdg = (np.rad2deg(np.arctan2(-mu[m_].mean(), -mv[m_].mean())) + 360) % 360
+        L.append(f"  {k:4d} {osp[m_].mean():6.2f}  {msp[m_].mean():6.2f}  {msp[m_].mean()/max(osp[m_].mean(),1e-9):5.2f} {odg:9.0f}° {mdg:8.0f}°")
+    amp_o = max(osp[h == k].mean() for k in range(24) if (h == k).any())-min(osp[h == k].mean() for k in range(24) if (h == k).any())
+    amp_m = max(msp[h == k].mean() for k in range(24) if (h == k).any())-min(msp[h == k].mean() for k in range(24) if (h == k).any())
+    L += [f"  günlük genlik  METAR {amp_o:.2f} / ERA5 {amp_m:.2f} m/s",
+          f"  uç değerler    >10 m/s saat oranı: METAR %{100*(osp>10).mean():.1f} / ERA5 %{100*(msp>10).mean():.1f}"]
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "wind_summary.txt").write_text("\n".join(L), encoding="utf-8"); print("\n".join(L))
     try:

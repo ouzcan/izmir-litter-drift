@@ -1,0 +1,16 @@
+ERA5 ↔ LTBJ METAR (İzmir Adnan Menderes, 38.2667°K 27.15°D, 120 m)
+ortak saat: 8141 (2025-09-01 → 2026-08-31)
+
+  hız  bias (ERA5 − METAR)   -2.20 m/s
+  hız  RMSE                  3.06 m/s
+  hız  r                     0.691
+  ortalama hız  METAR/ERA5   4.89 / 2.70 m/s
+
+  u bileşeni  bias / RMSE    -0.60 / 1.96 m/s
+  v bileşeni  bias / RMSE    +1.65 / 3.16 m/s
+  vektör korelasyonu (u,v)   0.772
+
+  yön  bias / RMSE (>1 m/s)  -3.2° / 52.0°   (7861 saat)
+
+NOT: LTBJ iç kesimde ve 120 m rakımda; körfez üzerindeki imbatı tam temsil etmez.
+Bu karşılaştırma ERA5'in zamansal doğruluğunu sınar, mutlak deniz üstü hız kalibrasyonunu değil.
