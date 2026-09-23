@@ -12,7 +12,7 @@ Model alanının içinde; en yakın ağ düğümü ~44 m uzakta. Ücretsiz, kay�
 
 Metrikler: bias, RMSE, merkezlenmiş RMSE, Pearson r, std oranı. Datum farklı olduğu için ORTALAMALAR ÇIKARILIR
 (model datumu başlangıç seviyesi, mareograf kendi sıfırına göre) — karşılaştırılan şey salınım, mutlak seviye değil.
-`utide` kuruluysa M2/S2/K1/O1 genlik-faz karşılaştırması da yapılır (pip install utide).
+Gelgit harmonikleri (M2/S2/N2/K1/O1/P1 genlik-faz) numpy en küçük karelerle çözülür — utide GEREKMEZ.
 """
 from __future__ import annotations
 import argparse, csv, json, sys, time
