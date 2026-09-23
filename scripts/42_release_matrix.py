@@ -128,7 +128,7 @@ def main():
     meta = {"mode": a.mode, "run": a.run, "start": a.start, "days": a.days, "windage": a.windage, "cell_km": a.cell_km,
             "header": f"koşu: {a.run} | {a.mode} | {start:%Y-%m-%d} +{a.days:g} gün | {len(ids)} nokta, {len(pts)*n_per} parçacık | windage {a.windage} | rüzgâr {'yok' if a.no_wind else 'ERA5'}"}
     json.dump(meta, open(out / "meta.json", "w", encoding="utf-8"), ensure_ascii=False)
-    ep = agg.endpoints_from_result(o.result)
+    ep = agg.endpoints_from_result(o.result, model=o)
     rows, zone, zn = agg.aggregate(out, origins, ep, meta)
     try: agg.plot_matrix(out, origins, ep, rows, zn, meta, coast_file=f0)
     except Exception as e:  # noqa: BLE001

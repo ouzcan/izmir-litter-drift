@@ -14,7 +14,8 @@ horizontal_diffusivity_m2s:
 beaching:
   method: distance           # LOCATE: mesafe tabanlı
   coastline_action: stranding
-  refloat_probability: 0.0   # senaryo: 0.0 ve 0.1
+  refloat_days: null         # yeniden yüzdürme kapalı = kalıcı vurma (taban); duyarlılık: 5 gün → od_refloat.py, 51 --refloat_days
+  refloat_perm: 0.0          # --refloat_days ile: ilk temasta kalıcı vurma olasılığı
 
 release:
   particles_per_source_per_hour: 5

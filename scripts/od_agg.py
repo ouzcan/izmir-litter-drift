@@ -49,9 +49,11 @@ def aggregate(out: Path, origins: list[dict], endpoints: dict, meta: dict):
     zids = [z[0] for z in Z if z[0] != "Z12"] + ["Z00", "Z12"]
     ids = [o["origin"] for o in origins]
     with open(out / "endpoints.csv", "w", encoding="utf-8", newline="") as fh:
-        w = csv.writer(fh); w.writerow(["origin", "lon_end", "lat_end", "stranded", "t_release_h", "t_end_h", "zone_id"])
+        status = endpoints.get("status")
+        w = csv.writer(fh); w.writerow(["origin", "lon_end", "lat_end", "stranded", "t_release_h", "t_end_h", "zone_id", "status"])
         for i in range(len(lon)):
-            if np.isfinite(lon[i]): w.writerow([ids[om[i]], f"{lon[i]:.5f}", f"{lat[i]:.5f}", int(stranded[i]), f"{t_rel[i]:.0f}", f"{t_end[i]:.1f}", zone[i]])
+            if np.isfinite(lon[i]): w.writerow([ids[om[i]], f"{lon[i]:.5f}", f"{lat[i]:.5f}", int(stranded[i]), f"{t_rel[i]:.0f}", f"{t_end[i]:.1f}", zone[i],
+                                               status[i] if status is not None else ("stranded" if stranded[i] else "active")])
     rows = []
     for k, o in enumerate(origins):
         m = om == k; n = int(m.sum())
@@ -67,7 +69,11 @@ def aggregate(out: Path, origins: list[dict], endpoints: dict, meta: dict):
         w = csv.DictWriter(fh, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
     hdr = meta.get("header", "")
     lines = [hdr, (f"kıyıya vuran toplam: %{100*stranded.mean():.0f}; medyan vurma süresi {np.median((t_end-t_rel)[stranded]):.1f} h"
-                   if stranded.any() else "kıyıya vuran yok"), ""]
+                   if stranded.any() else "kıyıya vuran yok")]
+    if endpoints.get("status") is not None:
+        st = np.asarray(endpoints["status"], dtype=object); fin = np.isfinite(lon)
+        lines.append(f"alan dışına çıkan (outside): %{100*np.mean(st[fin] == 'outside'):.1f}; izleme sonunda denizde (active): %{100*np.mean(st[fin] == 'active'):.1f}")
+    lines.append("")
     tot = {z: float(np.mean([float(r[z]) for r in rows])) for z in zids}
     lines.append("bölge payları (salım noktalarının DÜZ ortalaması — kaynak yükü ağırlıklı için 53_weighted_shares.py): " + ", ".join(f"{z} %{100*tot[z]:.0f}" for z in zids if tot[z] >= 0.005))
     if meta.get("mode") == "sources":
@@ -119,19 +125,43 @@ def plot_matrix(out: Path, origins, endpoints, rows, zn, meta, coast_file=None):
     ax.set_xlim(x0, x1); ax.set_ylim(y0, y1); ax.set_aspect(1 / COSLAT); ax.grid(alpha=0.3)
     fig.savefig(out / "matrix.png", dpi=120, bbox_inches="tight"); plt.close(fig)
 
-def endpoints_from_result(ds):
-    """OpenDrift o.result → endpoints sözlüğü (origin_idx, lon, lat, stranded, t_rel, t_end)."""
+def endpoints_from_result(ds, model=None):
+    """OpenDrift o.result → endpoints sözlüğü (origin_idx, lon, lat, stranded, t_rel, t_end, status).
+    model verilirse (koşuyu yapan nesne) erken biten koşunun son çıktı adımından sonra pasifleşen parçacıkları düzeltir:
+    OpenDrift 1.14 bunları bir sonraki çıktı zamanına yazar, final'de tampon kesilince 'active' görünürler (~%0,1)."""
     omv = ds["origin_marker"].values
     om = (np.nanmax(omv, axis=1) if omv.ndim == 2 else omv)
     om = np.where(np.isfinite(om), om, 0).astype(int)
     lon = ds["lon"].ffill("time").isel(time=-1).values; lat = ds["lat"].ffill("time").isel(time=-1).values
     stat = ds["status"].values.astype(float); fm = ds["status"].attrs.get("flag_meanings", "").split(); meaning = {i: n for i, n in enumerate(fm)}
     last = np.array([r[np.isfinite(r)][-1] if np.isfinite(r).any() else np.nan for r in stat])
-    stranded = np.array([meaning.get(int(v), "?") == "stranded" if np.isfinite(v) else False for v in last])
+    status = np.array([meaning.get(int(v), "?") if np.isfinite(v) else "NA" for v in last], dtype=object)
+    stranded = status == "stranded"
     tv = ds["time"].values; hours = (tv - tv[0]) / np.timedelta64(1, "h")
     t_end = np.array([hours[np.where(np.isfinite(r))[0][-1]] if np.isfinite(r).any() else np.nan for r in stat])
     t_rel = np.array([hours[np.where(np.isfinite(r))[0][0]] if np.isfinite(r).any() else np.nan for r in stat])
-    return {"origin_idx": om, "lon": lon, "lat": lat, "stranded": stranded, "t_rel": t_rel, "t_end": t_end}
+    if "t_first_beach" in ds:   # od_refloat: vurma süresi = ilk kıyı teması (tabandaki ölçünün karşılığı), bitiş anı değil
+        tfb = ds["t_first_beach"].ffill("time").isel(time=-1).values.astype(float)
+        ok = np.isfinite(tfb) & (tfb >= 0)
+        t_end = np.where(ok, t_rel + tfb / 3600.0, t_end)
+    if model is not None:
+        try:
+            de = model.elements_deactivated; cats = list(model.status_categories)
+            row = {int(t): i for i, t in enumerate(np.asarray(ds["trajectory"].values))}
+            fixed = 0
+            for k in range(len(de.ID)):
+                i = row.get(int(de.ID[k]))
+                if i is None or status[i] != "active" or int(de.status[k]) == 0: continue
+                status[i] = cats[int(de.status[k])]; lon[i] = float(de.lon[k]); lat[i] = float(de.lat[k])
+                t_end[i] = t_rel[i] + float(de.age_seconds[k]) / 3600.0
+                tfb0 = getattr(de, "t_first_beach", None)
+                if tfb0 is not None and float(tfb0[k]) >= 0: t_end[i] = t_rel[i] + float(tfb0[k]) / 3600.0
+                fixed += 1
+            stranded = status == "stranded"
+            if fixed: print(f"[agg] son çıktı adımından sonra pasifleşen {fixed} parçacık gerçek son durumuyla düzeltildi")
+        except Exception as e:
+            print("[agg] uyarı: pasifleşen parçacık düzeltmesi yapılamadı:", e)
+    return {"origin_idx": om, "lon": lon, "lat": lat, "stranded": stranded, "t_rel": t_rel, "t_end": t_end, "status": status}
 
 def endpoints_from_csv(p: Path, origins):
     idx = {o["origin"]: k for k, o in enumerate(origins)}
@@ -139,4 +169,5 @@ def endpoints_from_csv(p: Path, origins):
     return {"origin_idx": np.array([idx[r["origin"]] for r in rows]),
             "lon": np.array([float(r["lon_end"]) for r in rows]), "lat": np.array([float(r["lat_end"]) for r in rows]),
             "stranded": np.array([r["stranded"] == "1" for r in rows]),
-            "t_rel": np.array([float(r["t_release_h"]) for r in rows]), "t_end": np.array([float(r["t_end_h"]) for r in rows])}
+            "t_rel": np.array([float(r["t_release_h"]) for r in rows]), "t_end": np.array([float(r["t_end_h"]) for r in rows]),
+            "status": np.array([r.get("status") or ("stranded" if r["stranded"] == "1" else "active") for r in rows], dtype=object)}

@@ -11,7 +11,14 @@ Kullanım (Windows, litter):
     python scripts/51_year_opendrift.py --mode sources            # hazır olan tüm aylar (yüzey dosyası varsa)
     python scripts/51_year_opendrift.py --mode grid --month 2025-09
     python scripts/51_year_opendrift.py --mode both --windage 0.01 --tag w1   # duyarlılık
+    python scripts/51_year_opendrift.py --mode both --deactivate_outside --tag base2      # alan dışına çıkan parçacık biter
+    python scripts/51_year_opendrift.py --mode grid --deactivate_outside --refloat_days 5 --track_days 45 --tag rf5
 Yüzey dosyası olmayan aylar atlanır; biten aylar (endpoints.csv var) --force olmadan tekrar koşulmaz.
+Duyarlılık sırası: scripts/watch_sensitivity.bat; karşılaştırma tablosu: 54_sensitivity.py.
+--deactivate_outside : B_model kutusunu terk eden parçacık 'outside' ile biter (Z12). Yoksa alan dışında akıntı 0 olur,
+                       parçacık yalnız rüzgârla Sakız'a/Çandarlı'ya sürüklenip orada "kıyıya vurmuş" sayılır.
+--refloat_days L     : od_refloat.RefloatDrift — kıyıya oturan parçacık ortalama L gün sonra yeniden yüzer (üstel);
+                       --refloat_perm p ile ilk temasta kalıcı vurma olasılığı. Vurma süresi = ilk temas (tabanla aynı ölçü).
 """
 from __future__ import annotations
 import argparse, csv, glob, importlib, json
@@ -86,11 +93,18 @@ def run_month(a, mode, ym, m0, m1):
     readers = [cur]
     if not a.no_wind: readers.append(reader_netCDF_CF_generic.Reader(str(m41.prepare_wind(t0, end))))
     readers.append(reader_global_landmask.Reader())
-    o = OceanDrift(loglevel=30); o.add_reader(readers)
-    o.set_config("general:coastline_action", P["beaching"]["coastline_action"]); o.set_config("general:use_auto_landmask", False)
+    if a.refloat_days:
+        from od_refloat import RefloatDrift
+        o = RefloatDrift(loglevel=30, refloat_days=a.refloat_days, p_perm=a.refloat_perm, seed=a.seed)   # coastline_action 'previous' + oturma/yüzdürme
+    else:
+        o = OceanDrift(loglevel=30); o.set_config("general:coastline_action", P["beaching"]["coastline_action"])
+    o.add_reader(readers); o.set_config("general:use_auto_landmask", False)
+    if a.deactivate_outside:   # model alanını terk eden parçacık 'outside' ile biter (alan dışında akıntı yok → yapay sürüklenme)
+        for side, v in zip(("west", "east", "south", "north"), (x0, x1, y0, y1)): o.set_config(f"drift:deactivate_{side}_of", float(v))
     o.set_config("drift:stokes_drift", False); o.set_config("drift:vertical_mixing", False); o.set_config("drift:advection_scheme", "runge-kutta4")
     o.set_config("environment:fallback:horizontal_diffusivity", float(a.diffusivity))
     for v in ("x_sea_water_velocity", "y_sea_water_velocity", "x_wind", "y_wind"): o.set_config(f"environment:fallback:{v}", 0.0)
+    np.random.seed(a.seed)   # salım yarıçapı ve yatay difüzyon np.random kullanır → varyantlar aynı tohumla karşılaştırılır
     for k, og in enumerate(origins):
         for t in times:
             o.seed_elements(lon=og["lon"], lat=og["lat"], radius=radius, number=n_per, time=t, wind_drift_factor=a.windage, origin_marker=k)
@@ -102,9 +116,13 @@ def run_month(a, mode, ym, m0, m1):
         for og in origins: w.writerow({**og, "lon": f"{og['lon']:.5f}", "lat": f"{og['lat']:.5f}"})
     meta = {"mode": mode, "run": "year", "month": ym, "start": t0.isoformat(), "end": end.isoformat(), "days": (end - t0).days,
             "windage": a.windage, "diffusivity": a.diffusivity, "wind": not a.no_wind, "cell_km": a.cell_km, "track_days": a.track_days,
-            "n_particles": ntot, "header": f"yıl {mode} {ym} | {ntot} parçacık | windage {a.windage} | difüzyon {a.diffusivity} | rüzgâr {'yok' if a.no_wind else 'ERA5'}"}
+            "deactivate_outside": bool(a.deactivate_outside), "refloat_days": a.refloat_days, "refloat_perm": a.refloat_perm,
+            "seed": a.seed, "tag": a.tag, "n_particles": ntot,
+            "header": (f"yıl {mode} {ym}{(' [' + a.tag + ']') if a.tag else ''} | {ntot} parçacık | windage {a.windage} | difüzyon {a.diffusivity} | "
+                       f"rüzgâr {'yok' if a.no_wind else 'ERA5'} | alan dışı {'biter' if a.deactivate_outside else 'sürükleniyor'}"
+                       + (f" | yeniden yüzdürme λ_R {a.refloat_days:g} g, kalıcı p {a.refloat_perm:g} (vurma süresi = ilk temas)" if a.refloat_days else ""))}
     json.dump(meta, open(out / "meta.json", "w", encoding="utf-8"), ensure_ascii=False)
-    ep = agg.endpoints_from_result(o.result)
+    ep = agg.endpoints_from_result(o.result, model=o)
     # salım zamanı mutlak (saat, ay başından) zaten t_rel'de; matris/summary aylık
     agg.aggregate(out, origins, ep, meta)
     if not a.keep_track:
@@ -122,6 +140,10 @@ def main():
     ap.add_argument("--cell_km", type=float, default=1.0)
     ap.add_argument("--windage", type=float, default=float(P["windage"]["base"])); ap.add_argument("--no-wind", action="store_true")
     ap.add_argument("--diffusivity", type=float, default=float(P["horizontal_diffusivity_m2s"]["base"]))
+    ap.add_argument("--deactivate_outside", action="store_true", help="B_model kutusunu terk eden parçacık biter ('outside' → Z12)")
+    ap.add_argument("--refloat_days", type=float, default=None, help="kıyıya oturan parçacığın ortalama yeniden yüzme süresi (gün); yoksa kalıcı vurma")
+    ap.add_argument("--refloat_perm", type=float, default=0.0, help="--refloat_days ile: ilk temasta kalıcı vurma olasılığı")
+    ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--tag", default=""); ap.add_argument("--keep_track", action="store_true", help="track.nc'yi sakla (büyük)")
     ap.add_argument("--allow_truncated", action="store_true", help="sonraki ayın yüzey dosyası yokken de koş (izleme ay sonunda kesilir)")
     a = ap.parse_args()

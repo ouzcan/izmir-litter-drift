@@ -8,7 +8,7 @@ modelleyen açık çalışma: **makale + "bu çöp nereye gider?" web haritası*
 **Durum (23 Eylül 2026):** yıllık koşu (Eyl 2025 – Ağu 2026) **tamamlandı** — 12 ay 3B SCHISM + 12 ay × 2 mod
 OpenDrift, mevsimsel haritalar, site verisi. Kaynak ağırlıklandırma senaryolaştırıldı. **Doğrulama Katman 1 bitti**:
 su seviyesi (Menteş mareografı) ve rüzgâr (LTBJ METAR) karşılaştırmaları yapıldı — hidrodinamik çekirdek sağlam,
-meteorolojik zorlama az enerjili. Sırada duyarlılık koşuları ve makale.
+meteorolojik zorlama az enerjili. Duyarlılık geçişi hazır (`scripts\watch_sensitivity.bat`), sonra makale.
 Nerede kaldık: **`docs/DURUM.md`**. Karar kaydı: `docs/decisions.md`. Doğrulama sonuçları:
 `docs/sonuclar/dogrulama/BULGULAR.md`.
 
@@ -50,6 +50,8 @@ hiç görmüyor. Teşhis: **meteorolojik zorlama az enerjili, hidrodinamik model
 | `50_year_pipeline.py` | yıllık koşu: plan/check/download/prepare/script/post/status |
 | `51_year_opendrift.py`, `52_seasonal_maps.py` | aylık salım partileri, mevsimsel özetler |
 | `53_weighted_shares.py` | kaynak yüküne göre ağırlıklı bölge payları (3 senaryo; koşu tekrarı gerekmez) |
+| `54_sensitivity.py`, `od_refloat.py` | duyarlılık tablosu (bölge × varyant, tabana göre puan farkı); kıyıya oturma + yeniden yüzdürme modeli |
+| `watch_sensitivity.bat` | duyarlılık sırası: taban v2 (alan dışı biter), windage 0,03/0,01/0, difüzyon 1/10, refloat λ_R 5 g |
 | `70_validate_sealevel.py` | doğrulama: SCHISM ↔ Menteş mareografı (gelgit/kalan ayrıştırmalı) |
 | `71_validate_wind.py` | doğrulama: ERA5 ↔ LTBJ METAR (günlük döngü analizli) |
 | `watch_opendrift.bat` | gözcü: 30 dk'da bir tarayıp yüzey dosyası hazır olan ayları koşar |

@@ -1,4 +1,4 @@
-# DURUM — nerede kaldık (23 Eylül 2026)
+# DURUM — nerede kaldık (23 Eylül 2026, öğle)
 
 > Yeni oturuma başlarken önce bunu oku, sonra `docs/decisions.md` (karar kaydı) ve
 > `docs/sonuclar/dogrulama/BULGULAR.md` (doğrulama sonuçları). Plan `docs/dogrulama.md`,
@@ -8,9 +8,20 @@
 ## Tek cümle
 İzmir Körfezi için ~110 m'lik 3B SCHISM + OpenDrift zinciri kuruldu, **bir yıllık koşu (Eyl 2025 – Ağu 2026)
 tamamlandı**, site **yayında**, kaynak ağırlıklandırma senaryolaştırıldı ve **Doğrulama Katman 1 bitti** —
-sonuç: hidrodinamik çekirdek sağlam, **meteorolojik zorlama az enerjili**. Sırada duyarlılık koşuları ve makale.
+sonuç: hidrodinamik çekirdek sağlam, **meteorolojik zorlama az enerjili**. **Duyarlılık geçişi hazır, koşulmayı
+bekliyor** (`scripts\watch_sensitivity.bat`); sonra makale.
 
-## Şu an çalışan bir şey yok
+## Şu an çalışan bir şey yok — sıradaki komut
+```
+scripts\watch_sensitivity.bat
+```
+7 adım, sırayla (her adım biten ayları atlar, kesilirse aynı komutla devam): taban v2 `base2` (alan dışı biter) →
+windage 0,03 `w3` → 0,01 `w1` → rüzgârsız `w0` → difüzyon 1 `d1` / 10 `d10` → yeniden yüzdürme `rf5` (pahalı, 2 km
+ızgara). Her varyanttan sonra `52 --tag`, sonda `54_sensitivity.py` → `runs/opendrift/year/sensitivity/sensitivity_grid.md`
+(bölge × varyant, tabana göre puan farkı, ilk-3 değişti mi). Ölçütler koşudan önce sabitlendi; seçme yok.
+Süre bilinmiyor — taban bir ay ~? dk sürmüştü; `rf5`'i önce tek ayla ölç (bat içinde komut).
+Sonuç beğenilirse site `60_web_data.py --year --tag base2` ile taban v2'ye geçer (henüz yapılmadı).
+
 Yıl bitti. 12 aylık yüzey dosyası `data/processed/schism_surface_*.nc` (her biri ~550 MB, `elev` + `dahv` içerir —
 ham SCHISM çıktısı silindi ama su seviyesi KAYIP DEĞİL), 12 ay × 2 mod OpenDrift `runs/opendrift/year/`,
 mevsimsel çıktılar `runs/opendrift/year/summary/`, site verisi `web/data/`.
@@ -68,7 +79,8 @@ düğümde aynı çıktı, yani CMEMS 4 km sınır alanından miras. Düzeltmesi
 2 cm kazandırır, önceliği düşük.
 
 ## Bekleyen kararlar (kullanıcı girdisi)
-- **Duyarlılık varyantları**: hangileri — windage 0,01/0,03, rüzgârsız, difüzyon 1/10, 2B karşılaştırma.
+- **2B karşılaştırma**: tam yıl değil, iki zıt ay (Aralık + Haziran) 2B SCHISM + OpenDrift; "3B neden gerekliydi"
+  gerekçesi için yeter. Henüz kurulmadı (33 `--mode 2d`, 40'ın 2B çıktısı için uyarlanması gerekir).
 - **Drifter kampanyası**: yapılacak mı, kaç adet. Karar "makaleye engel değil, v2 ya da DEÜ tekne verirse paralel".
 - **Kaynak grup payları**: `source_weights.csv`'deki 0,69/0,12/0,03/0,14/0,02 bölüşümü Claude'un kurgusu
   (dayanakları UNEP/MAP 2015 ve İzmir 2024 kompozisyonu). Gözden geçirilmeli.
@@ -78,8 +90,10 @@ düğümde aynı çıktı, yani CMEMS 4 km sınır alanından miras. Düzeltmesi
   M03 Teos, M04 Alaçatı, F04 Dikili model alanı dışında. Ayrıca İBB Meles raporuna göre Arap/Irmak/Çitlembik
   Meles'in KOLU olabilir, ayrı ağız olmayabilir — doğrulanmalı.
 - `paper/` hâlâ boş.
-- Alan-dışı parçacık düzeltmesi (`drift:deactivate_*`) yapılmadı — ızgara sonucundaki %24 "körfez dışı"
-  rakamının bir kısmı rüzgârla Sakız'a sürüklenip orada "kıyıya vurmuş" sayılan parçacıklar.
+- Alan-dışı düzeltmesi **koda girdi, henüz koşulmadı** (`51 --deactivate_outside`, bat'ta `base2`). Eski tabanda
+  ızgara %24 "Z12"nin %22,7'si alan dışında (Sakız/Koyun/Çandarlı kuzeyi) "kıyıya vurmuş" sayılan parçacık —
+  orada akıntı 0, yalnız rüzgârla sürüklenmişler. Yeni tabanda bunlar `outside` olur; Z10 payı da düşecek (38,9°K
+  kuzeyi alan dışı). Site hâlâ eski tabanı gösteriyor.
 
 ## Zincir (betik sırası) — hepsi Windows conda `litter`, yalnız SCHISM WSL'de
 `20` batimetri (EMODnet) → `30` ağ (dfm_tools/meshkernel) → `31` hgrid.gr3 → `32 download` (CMEMS+ERA5) →
@@ -87,6 +101,8 @@ düğümde aynı çıktı, yani CMEMS 4 km sınır alanından miras. Düzeltmesi
 `40` yüzey katmanı → `41` tek nokta / `42` matris (`43` yeniden toplulaştırma) → `60` web verisi.
 Yıllık: `50` (plan/check/download/prepare/script/post/status) → `51` → `52` → `60 --year` → `53` ağırlıklı paylar.
 Doğrulama: `70` su seviyesi, `71` rüzgâr (ikisi de `--download` + argümansız koşu).
+Duyarlılık: `51 --tag <t> [--deactivate_outside --windage --no-wind --diffusivity --refloat_days]` → `52 --tag <t>` →
+`54_sensitivity.py --base base2 --tags ...` (sıra: `scripts/watch_sensitivity.bat`). Yeniden yüzdürme modeli `scripts/od_refloat.py`.
 Gözcü: `scripts/watch_opendrift.bat`. Ortak toplulaştırma `scripts/od_agg.py`; bölgeler `config/coast_zones.csv`.
 
 ## Önemli teknik notlar (tekrar keşfetme)
@@ -114,14 +130,31 @@ Gözcü: `scripts/watch_opendrift.bat`. Ortak toplulaştırma `scripts/od_agg.py
   `-c user.name="Oguzcan" -c user.email="oguzcanozupek@gmail.com"`.
 - Supabase `izmir-litter` (znpsohjjeorqhxjyuiqn, eu-central-1): `throws` (RLS anon okur+ekler), görünümler,
   realtime, hız sınırı tetikleyicisi. Publishable anahtar `web/config.js`'te (açık olması normal).
+- **OpenDrift 1.14 erken biten koşu tuzağı**: bütün parçacıklar pasifleşince koşu erken biter; son çıktı adımından
+  sonra pasifleşenler bir sonraki çıktı zamanına yazılır, final'de tampon kesilince sonuçta `active` görünürler
+  (taban ızgarada %0,1–1,3 "denizde"). `od_agg.endpoints_from_result(ds, model=o)` bunları `o.elements_deactivated`
+  ile düzeltir (51 ve 42 böyle çağırır). Sentetik test bulutta geçti (`RefloatDrift` + `deactivate_*`).
+- **Yeniden yüzdürme (`od_refloat.RefloatDrift`)**: `coastline_action: previous` + kıyıya değen parçacık dondurulur
+  (`elements.moving = 0`, OpenDrift'in kendi bayrağı; `update_positions` ve `horizontal_diffusion` buna uyar),
+  üstel bekleme (ortalama λ_R gün) sonra yüzer; izleme sonunda karada olan `stranded` sayılır; vurma süresi =
+  `t_first_beach` (ilk temas; tabandaki ölçünün birebir karşılığı). Salım anında karada olan tabanla aynı: kalıcı vurar.
+  Onink vd. 2021 λ_R = 69 g (Hinata 2017); 30–45 gün izlemede tabandan ayırt edilemez → band 5 günle çizilir.
+  **Pahalı**: oturanlar aktif kalır (pasifleşmez) → ortam okuması ~10× → bat'ta 2 km ızgara × 5 parçacık.
+- Varyant karşılaştırması tohumla: `51 --seed 0` (varsayılan) `np.random.seed` → salım yarıçapı ve difüzyon aynı
+  rastgele diziyle; varyantlar arası fark yalnız fizik parametresinden.
+- `endpoints.csv`'de yeni `status` sütunu (stranded/outside/active/…); eski dosyalar sütunsuz da okunur (`stranded`'dan türetilir).
 
 ## Sıradaki adımlar
 > Öncelik kararı (21 Eylül, `docs/decisions.md`): **modeli büyütmeyi bırak, sınamaya başla.**
 > 1–4. maddeler bitti: site yayında, ağırlıklandırma yapıldı, Katman 1 doğrulaması tamam.
 
-1. **Duyarlılık koşuları** — windage 0,01/0,03, rüzgârsız, difüzyon 1/10, 2B karşılaştırma. Gözcü bir gecede
-   koşar. Artık gerekçeli: zorlamanın az enerjili olduğu ölçüldü, bant bunu bracketliyor.
-2. **Alan-dışı düzeltmesi** aynı geçişte (`drift:deactivate_west_of` vb., B_model sınırı).
+1. **`scripts\watch_sensitivity.bat`'ı başlat** (taban v2 + 6 varyant; alan-dışı düzeltmesi tabana girdi). Bitince
+   `sensitivity_grid.md`'yi oku: windage 0,03 tabana göre kaç puan oynatıyor, ilk-3 değişiyor mu, refloat Karaburun
+   %24'ünü nereye taşıyor. Sonra karar: site taban v2'ye geçsin mi (`60 --year --tag base2`).
+   Gerekçe (23 Eylül): kabarma %27 eksik → stres ∝ U² → körfez rüzgârı ~%15 düşük → telafi windage ≈ 0,025;
+   0,03 bunu bracketliyor ama SCHISM akıntısındaki rüzgâr eksikliğini değil — makalede "alt sınır" diye yazılacak.
+   ERA5 ×1,3 ile SCHISM tekrarı (40 saat) gelecek iş.
+2. **2B karşılaştırma** — yalnız Aralık + Haziran (bekleyen karar).
 3. **Makale taslağı** (`paper/`). Yöntem bu dosyadan + `docs/faz3-*.md`'den; sonuçlar `docs/sonuclar`;
    doğrulama bölümü `BULGULAR.md`'den. Çerçeve: "İzmir Körfezi için ilk yüksek çözünürlüklü dolaşım +
    sürüklenme modeli, deniz seviyesi ve rüzgârla doğrulanmış, kaynak→kıyı bağlanabilirliği ve duyarlılık
