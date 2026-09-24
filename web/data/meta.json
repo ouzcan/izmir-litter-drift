@@ -79,7 +79,7 @@
  "cell_km": 1.0,
  "n_cells": 2627,
  "n_sources": 23,
- "generated": "2026-09-22",
+ "generated": "2026-09-24",
  "model": "SCHISM 3B (11 sigma, ~110 m iç körfez) + OpenDrift; rüzgâr ERA5, windage %2, difüzyon 5 m²/s; Stokes yok",
  "cells_files": {
   "yil": "cells_yil.json",

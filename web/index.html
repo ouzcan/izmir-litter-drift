@@ -93,9 +93,9 @@
       <p>Haritayı 1 km'lik hücrelere böldük; her hücreden yüzlerce sanal parçacık saldık ve nerede karaya vurduklarını saydık. Tıkladığın noktanın hücresi için bu dağılımı gösteriyoruz; çizilen yol, o hücreden çıkan gerçek bir model parçacığının vardığı noktaya doğru temsili bir çizgidir.</p>
       <h3>Sınırlar</h3>
       <ul>
-        <li>Şu an tek bir haftanın (6–13 Eylül 2026, kuzey rüzgârı) sonuçları var; yıllık koşu sürüyor, mevsimler eklenecek.</li>
-        <li>Dalga kaynaklı Stokes sürüklenmesi yok; kıyıya vuran çöp yeniden denize dönmüyor; batan/parçalanan çöp modellenmiyor.</li>
-        <li>Model alanının batı sınırından çıkan çöp "körfez dışı" sayılır (Sakız/Koyun adaları yönü).</li>
+        <li>Bir yıllık koşu (Eylül 2025 – Ağustos 2026): yıl, dört mevsim ve her ay ayrı seçilebilir; sonuç seçilen dönemin havasını yansıtır.</li>
+        <li>Dalga kaynaklı Stokes sürüklenmesi yok; kıyıya vuran çöp yeniden denize dönmüyor (bu varsayım sonucu en çok değiştiren şey: yeniden yüzdürme senaryosunda Karaburun payı yarıya iniyor, körfezi terk eden pay artıyor); batan/parçalanan çöp modellenmiyor.</li>
+        <li>Model alanını (haritadaki kesik çizgi) kuzey ya da batı açık sınırından terk eden çöp "körfez dışı" sayılır ve orada bırakılır; ötesinde akıntı verisi yok. Yılda çöpün yaklaşık üçte biri böyle çıkıyor, kışın (Kasım–Şubat) yarısı.</li>
       </ul>
       <h3>Veri ve kod</h3>
       <p>Tüm kod ve yöntem açık: <a id="about-repo" href="#" target="_blank" rel="noopener">GitHub deposu</a>. Hücre verisi dönem başına ayrı dosyada: <a data-cells-link href="data/cells_yil.json">cells_&lt;dönem&gt;.json</a> (dönem listesi <a href="data/meta.json">meta.json</a>), kıyı bölgeleri <a href="data/zones.json">zones.json</a>. Attığın çöpler anonim bir cihaz kimliğiyle kaydedilir; kişisel veri toplanmaz.</p>
@@ -106,9 +106,9 @@
       <p>The bay is divided into 1 km cells; from each cell we released hundreds of virtual particles and counted where they beached. When you click, we show that distribution for the nearest cell; the drawn path is a schematic line towards the landing point of a real model particle released from that cell.</p>
       <h3>Limitations</h3>
       <ul>
-        <li>Currently one week of conditions (6–13 September 2026, northerly winds); a full-year run is in progress and seasons will be added.</li>
-        <li>No wave-driven Stokes drift; beached litter does not refloat; sinking and fragmentation are not modelled.</li>
-        <li>Litter leaving the western model boundary counts as "outside the bay" (towards Chios / Oinousses).</li>
+        <li>One full year (September 2025 – August 2026): year, four seasons and each month can be selected; results reflect the weather of the chosen period.</li>
+        <li>No wave-driven Stokes drift; beached litter does not refloat (the assumption that changes results most: with refloating, the Karaburun share halves and more litter leaves the bay); sinking and fragmentation are not modelled.</li>
+        <li>Litter leaving the model area (dashed line on the map) through the northern or western open boundary counts as "outside the bay" and is dropped there; no current data beyond. About a third of all litter leaves this way over the year, half of it in winter (November–February).</li>
       </ul>
       <h3>Data and code</h3>
       <p>Everything is open: <a id="about-repo-en" href="#" target="_blank" rel="noopener">GitHub repository</a>. Cell data is split per period: <a data-cells-link href="data/cells_yil.json">cells_&lt;period&gt;.json</a> (period list in <a href="data/meta.json">meta.json</a>), coast zones <a href="data/zones.json">zones.json</a>. Throws are stored with an anonymous device id; no personal data is collected.</p>
