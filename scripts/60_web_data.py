@@ -7,7 +7,8 @@ Yıllık akış bittiğinde 51'in aylık klasörleri mevsimlere toplanır:
     python scripts/60_web_data.py --year            # runs/opendrift/year/grid_*, sources_* → yil, DJF, MAM, JJA, SON
 Çıktı (web/data/): cells_<dönem>.json — DÖNEM BAŞINA ayrı dosya (site açılışta yalnız seçili dönemi indirir;
        tek parça hâlinde 17 dönem 12 MB tutuyordu). Her hücre: {id, lon, lat, r: {p: {bölge: pay}, t: medyan saat,
-       s: kıyıya vurma oranı, n, e: [[lon, lat, saat], …] örnek varış noktaları}}.
+       s: kıyıya vurma oranı, n, e: [[lon, lat, saat], …] örnek varış noktaları, x: [[lon, lat, saat], …] örnek
+       ALAN DIŞINA ÇIKIŞ noktaları (status outside; site s olasılığıyla e'den, 1-s ile x'ten seçer)}}.
        Ayrıca sources.json (tüm dönemler tek dosyada, küçük), zones.json (model alanı dışı bölgeler "outside": true
        ile işaretli), meta.json (dönem listesi + cells_files eşlemesi).
 """
@@ -48,6 +49,13 @@ def accumulate(acc, origins, ep, rnd):
             else:
                 j = rnd.randint(0, k)
                 if j < N_END: a["e"][j] = pt
+        elif ep.get("status") is not None and ep["status"][i] == "outside":
+            k = a["kx"]; a["kx"] += 1
+            pt = [round(float(ep["lon"][i]), 4), round(float(ep["lat"][i]), 4), round(float(dt[i]), 1)]
+            if len(a["x"]) < N_END: a["x"].append(pt)
+            else:
+                j = rnd.randint(0, k)
+                if j < N_END: a["x"][j] = pt
 
 def finish(acc):
     out = {}
@@ -55,11 +63,11 @@ def finish(acc):
         if a["n"] == 0: continue
         p = {z: round(c / a["n"], 3) for z, c in a["z"].items() if c / a["n"] >= 0.005}
         out[oid] = {"p": p, "t": round(float(np.median(a["t"])), 1) if a["t"] else None,
-                    "s": round(a["ns"] / a["n"], 3), "n": a["n"], "e": a["e"]}
+                    "s": round(a["ns"] / a["n"], 3), "n": a["n"], "e": a["e"], "x": a["x"]}
     return out
 
 def new_acc():
-    return defaultdict(lambda: {"n": 0, "ns": 0, "z": defaultdict(int), "t": [], "e": [], "k": 0, "name": "", "lon": 0.0, "lat": 0.0})
+    return defaultdict(lambda: {"n": 0, "ns": 0, "z": defaultdict(int), "t": [], "e": [], "k": 0, "x": [], "kx": 0, "name": "", "lon": 0.0, "lat": 0.0})
 
 def build(period_runs: dict, labels: dict, mode: str, rnd):
     """period_runs: {dönem: [klasörler]} → (özellikler, dönem sırası)"""

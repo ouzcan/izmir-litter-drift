@@ -28,7 +28,7 @@ const I18N = {
     method: "Yöntem", data: "Veri", ly_cells: "Varış haritası (hücre → baskın kıyı)", ly_throws: "Herkesin çöpleri", ly_heat: "Yoğunluk (ısı haritası)", ly_sources: "Bilinen kaynaklar (dere ağızları, limanlar)",
     land: "Burası kara — denizde bir noktaya tıkla.",
     outside: "Burası model alanının dışında (haritadaki kesik çizgi). Model İzmir Körfezi ve yakın il kıyısını kapsıyor; güney kıyı (Sığacık, Pamucak) bu sürümde yok.",
-    loading: "Dönem verisi yükleniyor…", stranded: "kıyıya vurdu", atsea: "denizde kaldı / alan dışına çıktı",
+    loading: "Dönem verisi yükleniyor…", stranded: "kıyıya vurdu", atsea: "denizde kaldı", left_area: "sonra model alanını terk etti (açık Ege)",
     hours: "saat", median: "medyan", where: "Nereye vurur?", pick: "Ne atıyorsun?", drifting: "sürükleniyor…", landed_in: "sonra kıyıya vurdu",
     fact1: (z, p, t) => `Buradan atılan çöplerin <b>%${p}</b>'i <b>${z}</b> kıyısına vuruyor; tipik yolculuk <b>${t} saat</b>.`,
     fact2: (p) => `Buradan atılanların <b>%${p}</b>'i körfezden çıkıp açık Ege'ye gidiyor.`,
@@ -41,7 +41,7 @@ const I18N = {
     method: "Method", data: "Data", ly_cells: "Arrival map (cell → dominant coast)", ly_throws: "Everyone's litter", ly_heat: "Density (heatmap)", ly_sources: "Known sources (river mouths, ports)",
     land: "That is land — click a point at sea.",
     outside: "Outside the model area (dashed line on the map). The model covers İzmir Bay and the nearby provincial coast; the southern coast (Sığacık, Pamucak) is not in this version.",
-    loading: "Loading period data…", stranded: "beached", atsea: "stayed at sea / left the area",
+    loading: "Loading period data…", stranded: "beached", atsea: "stayed at sea", left_area: "later it left the model area (open Aegean)",
     hours: "h", median: "median", where: "Where does it end up?", pick: "What are you throwing?", drifting: "drifting…", landed_in: "later it beached",
     fact1: (z, p, t) => `<b>${p}%</b> of litter thrown here beaches on <b>${z}</b>; typical journey <b>${t} hours</b>.`,
     fact2: (p) => `<b>${p}%</b> of litter thrown here leaves the bay for the open Aegean.`,
@@ -235,10 +235,12 @@ async function onMapClick(e) {
   if (!cell) { toast(inDomain(lng, lat) ? t("land") : t("outside"), 5500); return; }
   const d = cell.d[state.period]; if (!d) { toast(t("land")); return; }
   state.busy = true; $("#result").classList.add("hidden");
-  const end = d.e.length ? pick(d.e) : null;
-  const stranded = !!end;
+  // Sonuç, hücrenin kıyıya vurma oranıyla (s) örneklenir: e = vuran örnekler, x = alan dışına çıkış noktaları
+  const hasE = d.e.length > 0, hasX = (d.x || []).length > 0;
+  const stranded = hasE && (Math.random() < d.s || !hasX);
+  const end = stranded ? pick(d.e) : (hasX ? pick(d.x) : null);
   const endLon = end ? end[0] : lng, endLat = end ? end[1] : lat, tHours = end ? end[2] : null;
-  const zone = end ? zoneOfPoint(endLon, endLat, d) : "Z12";
+  const zone = stranded ? zoneOfPoint(endLon, endLat, d) : "Z12";
   await animateThrow([lng, lat], [endLon, endLat], tHours);
   const rec = { device_id: state.device, item: state.item, period: state.period, cell_id: cell.id, lon: +lng.toFixed(5), lat: +lat.toFixed(5),
     end_lon: +endLon.toFixed(5), end_lat: +endLat.toFixed(5), zone_id: zone, t_hours: tHours, stranded, locale: state.lang };
@@ -270,7 +272,7 @@ function animateThrow(a, b, tHours) {
 function showResult(cell, d, zone, tHours, stranded, start) {
   const it = ITEMS[state.item]; $("#res-emoji").textContent = it.e;
   $("#res-title").textContent = stranded ? `${it[state.lang]} → ${zoneName(zone)}` : `${it[state.lang]} → ${zoneName("Z12")}`;
-  $("#res-sub").textContent = stranded ? `${tHours} ${t("hours")} ${t("landed_in")}` : t("atsea");
+  $("#res-sub").textContent = stranded ? `${tHours} ${t("hours")} ${t("landed_in")}` : (tHours ? `${tHours} ${t("hours")} ${t("left_area")}` : t("atsea"));
   const entries = Object.entries(d.p).sort((a, b) => b[1] - a[1]).slice(0, 6);
   $("#res-bars").innerHTML = `<div class="muted" style="margin-bottom:4px">${t("where")}</div>` + entries.map(([z, p]) =>
     `<div class="bar"><div class="track"><div class="fill" style="width:${Math.round(p * 100)}%;background:${ZONE_COLORS[z]}66"></div><span class="lbl">${zoneName(z)}</span></div><span class="pct">%${Math.round(p * 100)}</span></div>`).join("");
