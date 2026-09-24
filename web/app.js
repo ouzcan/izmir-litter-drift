@@ -156,11 +156,72 @@ function throwsGeo() {
     const p = { item: x.item, e: ITEMS[x.item]?.e || "🗑️", zone: x.zone_id, color: ZONE_COLORS[x.zone_id] || "#999", mine: x.device_id === state.device ? 1 : 0 };
     pts.push({ type: "Feature", geometry: { type: "Point", coordinates: [x.lon, x.lat] }, properties: p });
     ends.push({ type: "Feature", geometry: { type: "Point", coordinates: [x.end_lon, x.end_lat] }, properties: p });
-    lines.push({ type: "Feature", geometry: { type: "LineString", coordinates: curve([x.lon, x.lat], [x.end_lon, x.end_lat], 6, x.id) }, properties: p });
+    lines.push({ type: "Feature", geometry: { type: "LineString", coordinates: waterPath([x.lon, x.lat], [x.end_lon, x.end_lat]) }, properties: p });
   }
   return { pts: fc(pts), ends: fc(ends), lines: fc(lines) };
 }
 const fc = (f) => ({ type: "FeatureCollection", features: f });
+// ---------- su yolu: deniz hücreleri (1 km ızgara) üzerinde A*; gerçek yörünge değil, karayı bypass etmeyen temsili yol.
+// Gerçek parçacık yörüngeleri saklanmıyor (yalnız varış noktaları); düz/kıvrımlı çizgi yarımadaların üstünden geçiyordu.
+const WP = { ready: false, cache: new Map() };
+function wpBuild() {
+  const cs = state.cells; if (!cs.length) return;
+  const dx = 1 / (111 * COSLAT), dy = 1 / 111;   // 51_year_opendrift: cell_km 1
+  let x0 = Infinity, y0 = Infinity; for (const c of cs) { if (c.lon < x0) x0 = c.lon; if (c.lat < y0) y0 = c.lat; }
+  WP.dx = dx; WP.dy = dy; WP.x0 = x0; WP.y0 = y0; WP.grid = new Map();
+  for (const c of cs) { c.gi = Math.round((c.lon - x0) / dx); c.gj = Math.round((c.lat - y0) / dy); WP.grid.set(c.gi + "," + c.gj, c); }
+  WP.ready = true; WP.cache.clear();
+}
+function wpNeighbors(c) {
+  const out = [], g = WP.grid, at = (i, j) => g.get(i + "," + j);
+  for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) {
+    if (!di && !dj) continue; const n = at(c.gi + di, c.gj + dj); if (!n) continue;
+    if (di && dj && !at(c.gi + di, c.gj) && !at(c.gi, c.gj + dj)) continue;   // çapraz sızma yok (iki yanı da kara)
+    out.push([n, Math.hypot(di, dj)]);
+  }
+  return out;
+}
+function wpNearest(lon, lat, maxKm) {
+  let best = null, bd = Infinity;
+  for (const c of state.cells) { const ddx = (c.lon - lon) * COSLAT * 111, ddy = (c.lat - lat) * 111, d2 = ddx * ddx + ddy * ddy; if (d2 < bd) { bd = d2; best = c; } }
+  return bd <= maxKm * maxKm ? best : null;
+}
+function waterPath(a, b) {
+  if (!WP.ready) wpBuild();
+  const key = a[0].toFixed(4) + "," + a[1].toFixed(4) + ">" + b[0].toFixed(4) + "," + b[1].toFixed(4);
+  if (WP.cache.has(key)) return WP.cache.get(key);
+  let out = null;
+  const s0 = WP.ready && wpNearest(a[0], a[1], 1.5), s1 = WP.ready && wpNearest(b[0], b[1], 2.5);
+  if (s0 && s1) {
+    if (s0 === s1) out = [a, b];
+    else {
+      const h = (c) => Math.hypot((c.gi - s1.gi), (c.gj - s1.gj));
+      const gS = new Map([[s0, 0]]), prev = new Map(), open = [[h(s0), s0]], closed = new Set();
+      let found = false, it = 0;
+      while (open.length && it++ < 20000) {
+        let bi = 0; for (let i = 1; i < open.length; i++) if (open[i][0] < open[bi][0]) bi = i;
+        const [, c] = open.splice(bi, 1)[0]; if (c === s1) { found = true; break; } if (closed.has(c)) continue; closed.add(c);
+        for (const [n, w] of wpNeighbors(c)) { const g = gS.get(c) + w; if (g < (gS.get(n) ?? Infinity)) { gS.set(n, g); prev.set(n, c); open.push([g + h(n), n]); } }
+      }
+      if (found) {
+        const cells = []; for (let c = s1; c; c = prev.get(c)) cells.unshift(c);
+        out = [a, ...cells.map((c) => [c.lon, c.lat]), b];
+        for (let k = 0; k < 2; k++) {   // Chaikin yumuşatma (uçlar sabit)
+          const sm = [out[0]]; for (let i = 0; i < out.length - 1; i++) { const p = out[i], q = out[i + 1]; sm.push([0.75 * p[0] + 0.25 * q[0], 0.75 * p[1] + 0.25 * q[1]], [0.25 * p[0] + 0.75 * q[0], 0.25 * p[1] + 0.75 * q[1]]); } sm.push(out[out.length - 1]); out = sm;
+        }
+      }
+    }
+  }
+  if (!out) out = curve(a, b, 24, key);   // ızgara dışı / yol yok: eski kıvrımlı çizgi
+  WP.cache.set(key, out); return out;
+}
+function resample(path, n) {
+  const L = [0]; for (let i = 1; i < path.length; i++) L.push(L[i - 1] + Math.hypot((path[i][0] - path[i - 1][0]) * COSLAT, path[i][1] - path[i - 1][1]));
+  const tot = L[L.length - 1] || 1, out = []; let j = 0;
+  for (let k = 0; k <= n; k++) { const d = (k / n) * tot; while (j < L.length - 2 && L[j + 1] < d) j++; const f = (d - L[j]) / ((L[j + 1] - L[j]) || 1);
+    out.push([path[j][0] + (path[j + 1][0] - path[j][0]) * f, path[j][1] + (path[j + 1][1] - path[j][1]) * f]); }
+  return out;
+}
 function curve(a, b, n = 24, seed = "") {
   // hafif kıvrımlı temsili yol (deterministik: id'den tohum)
   let h = 0; for (const ch of String(seed)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
@@ -259,7 +320,7 @@ function zoneOfPoint(lon, lat, d) {
 }
 function animateThrow(a, b, tHours) {
   return new Promise((resolve) => {
-    const path = curve(a, b, 60, Math.random()); const el = document.createElement("div"); el.className = "marker"; el.innerHTML = `<span class="splash">${ITEMS[state.item].e}</span>`;
+    const path = resample(waterPath(a, b), 60); const el = document.createElement("div"); el.className = "marker"; el.innerHTML = `<span class="splash">${ITEMS[state.item].e}</span>`;
     marker?.remove(); marker = new maplibregl.Marker({ element: el, anchor: "center" }).setLngLat(a).addTo(map);
     const dur = Math.min(4500, Math.max(1800, (tHours || 12) * 120)); const t0 = performance.now();
     $("#res-sub").textContent = t("drifting");
